@@ -133,9 +133,7 @@ public class BluetoothSerial {
     @SuppressLint("MissingPermission")
     public synchronized void connected(BluetoothSocket socket, BluetoothDevice device, final String socketType) {
         if (D) Log.d(TAG, "connected, Socket Type:" + socketType);
-
         tryCancelAllThreads();
-
         // Start the thread to manage the connection and perform transmissions
         mConnectedThread = new ConnectedThread(socket, socketType);
         mConnectedThread.start();
@@ -152,9 +150,7 @@ public class BluetoothSerial {
      */
     public synchronized void stop() {
         if (D) Log.d(TAG, "stop");
-
         tryCancelAllThreads();
-
         setState(STATE_NONE);
     }
 
@@ -344,8 +340,9 @@ public class BluetoothSerial {
                 // See https://github.com/don/BluetoothSerial/issues/89
                 try {
                     Log.i(TAG, "Trying fallback...");
-                    // TODO fix method
-                    mmSocket = (BluetoothSocket) mmDevice.getClass().getMethod("createRfcommSocket", new Class[]{int.class}).invoke(mmDevice, 1);
+                    mmSocket = (BluetoothSocket) mmDevice.getClass().getMethod(
+                            "createRfcommSocketToServiceRecord", UUID.class
+                    ).invoke(mmDevice, UUID_SPP);
                     if (mmSocket != null) {
                         mmSocket.connect();
                     }
