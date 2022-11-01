@@ -41,8 +41,6 @@ public class BluetoothSerialPlugin extends Plugin {
 
     private BluetoothAdapter bluetoothAdapter;
     private BluetoothSerial implementation;
-    private Handler mHandler;
-    private PluginCall connectCall;
 
     // Debugging
     private static final String TAG = "BluetoothSerial";
@@ -64,19 +62,19 @@ public class BluetoothSerialPlugin extends Plugin {
     public void load() {
         super.load();
         bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
-        Runnable onConnect = () -> {
-            connectCall.resolve();
-            connectCall = null;
-        };
-        mHandler = new Handler(Looper.myLooper(), message -> {
+        Handler mHandler = new Handler(Looper.myLooper(), message -> {
             Log.d("BT-Message", message.toString());
-            Runnable callback = message.getCallback();
-            if (callback != null) {
-                callback.run();
+            if (message.what == MESSAGE_READ) {
+                buffer.append((String) message.obj);
+            } else {
+                Runnable callback = message.getCallback();
+                if (callback != null) {
+                    callback.run();
+                }
             }
             return false;
         });
-        implementation = new BluetoothSerial(mHandler, onConnect);
+        implementation = new BluetoothSerial(mHandler);
     }
 
     @PluginMethod
@@ -101,7 +99,6 @@ public class BluetoothSerialPlugin extends Plugin {
         String macAddress = call.getString("address");
         BluetoothDevice device = bluetoothAdapter.getRemoteDevice(macAddress);
         if (device != null) {
-            connectCall = call;
             implementation.connect(device, false);
             buffer.setLength(0);
         } else {

@@ -40,7 +40,6 @@ public class BluetoothSerial {
     private ConnectThread mConnectThread;
     private ConnectedThread mConnectedThread;
     private int mState;
-    private final Runnable onConnect;
 
     // Constants that indicate the current connection state
     public static final int STATE_NONE = 0;       // we're doing nothing
@@ -53,11 +52,10 @@ public class BluetoothSerial {
      *
      * @param handler A Handler to send messages back to the UI Activity
      */
-    public BluetoothSerial(Handler handler, Runnable onConnect) {
+    public BluetoothSerial(Handler handler) {
         mAdapter = BluetoothAdapter.getDefaultAdapter();
         mState = STATE_NONE;
         mHandler = handler;
-        this.onConnect = onConnect;
     }
 
     public String echo(String value) {
@@ -176,7 +174,6 @@ public class BluetoothSerial {
         Bundle bundle = new Bundle();
         bundle.putString(BluetoothSerialPlugin.DEVICE_NAME, device.getName());
         msg.setData(bundle);
-        mHandler.post(onConnect);
         setState(STATE_CONNECTED);
     }
 
