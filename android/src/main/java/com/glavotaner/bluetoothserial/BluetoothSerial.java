@@ -10,6 +10,8 @@ import android.os.Handler;
 import android.os.Message;
 import android.util.Log;
 
+import com.glavotaner.bluetoothserial.threads.CancellableThread;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -90,16 +92,10 @@ public class BluetoothSerial {
         if (D) Log.d(TAG, "start");
 
         // Cancel any thread attempting to make a connection
-        if (mConnectThread != null) {
-            mConnectThread.cancel();
-            mConnectThread = null;
-        }
+        tryCancelThread(mConnectThread);
 
         // Cancel any thread currently running a connection
-        if (mConnectedThread != null) {
-            mConnectedThread.cancel();
-            mConnectedThread = null;
-        }
+        tryCancelThread(mConnectedThread);
 
         setState(STATE_NONE);
 
@@ -116,17 +112,11 @@ public class BluetoothSerial {
 
         // Cancel any thread attempting to make a connection
         if (mState == STATE_CONNECTING) {
-            if (mConnectThread != null) {
-                mConnectThread.cancel();
-                mConnectThread = null;
-            }
+            tryCancelThread(mConnectThread);
         }
 
         // Cancel any thread currently running a connection
-        if (mConnectedThread != null) {
-            mConnectedThread.cancel();
-            mConnectedThread = null;
-        }
+        tryCancelThread(mConnectedThread);
 
         // Start the thread to connect with the given device
         mConnectThread = new ConnectThread(device, secure);
@@ -144,27 +134,7 @@ public class BluetoothSerial {
     public synchronized void connected(BluetoothSocket socket, BluetoothDevice device, final String socketType) {
         if (D) Log.d(TAG, "connected, Socket Type:" + socketType);
 
-        // Cancel the thread that completed the connection
-        if (mConnectThread != null) {
-            mConnectThread.cancel();
-            mConnectThread = null;
-        }
-
-        // Cancel any thread currently running a connection
-        if (mConnectedThread != null) {
-            mConnectedThread.cancel();
-            mConnectedThread = null;
-        }
-
-        // Cancel the accept thread because we only want to connect to one device
-        if (mSecureAcceptThread != null) {
-            mSecureAcceptThread.cancel();
-            mSecureAcceptThread = null;
-        }
-        if (mInsecureAcceptThread != null) {
-            mInsecureAcceptThread.cancel();
-            mInsecureAcceptThread = null;
-        }
+        tryCancelAllThreads();
 
         // Start the thread to manage the connection and perform transmissions
         mConnectedThread = new ConnectedThread(socket, socketType);
@@ -183,25 +153,8 @@ public class BluetoothSerial {
     public synchronized void stop() {
         if (D) Log.d(TAG, "stop");
 
-        if (mConnectThread != null) {
-            mConnectThread.cancel();
-            mConnectThread = null;
-        }
+        tryCancelAllThreads();
 
-        if (mConnectedThread != null) {
-            mConnectedThread.cancel();
-            mConnectedThread = null;
-        }
-
-        if (mSecureAcceptThread != null) {
-            mSecureAcceptThread.cancel();
-            mSecureAcceptThread = null;
-        }
-
-        if (mInsecureAcceptThread != null) {
-            mInsecureAcceptThread.cancel();
-            mInsecureAcceptThread = null;
-        }
         setState(STATE_NONE);
     }
 
@@ -261,7 +214,7 @@ public class BluetoothSerial {
      * like a server-side client. It runs until a connection is accepted
      * (or until cancelled).
      */
-    private class AcceptThread extends Thread {
+    private class AcceptThread extends Thread implements CancellableThread {
         // The local server socket
         private final BluetoothServerSocket mmServerSocket;
         private final String mSocketType;
@@ -344,7 +297,7 @@ public class BluetoothSerial {
      * with a device. It runs straight through; the connection either
      * succeeds or fails.
      */
-    private class ConnectThread extends Thread {
+    private class ConnectThread extends Thread implements CancellableThread {
         private /*final*/ BluetoothSocket mmSocket;
         private final BluetoothDevice mmDevice;
         private final String mSocketType;
@@ -432,7 +385,7 @@ public class BluetoothSerial {
      * This thread runs during a connection with a remote device.
      * It handles all incoming and outgoing transmissions.
      */
-    private class ConnectedThread extends Thread {
+    private class ConnectedThread extends Thread implements CancellableThread {
         private final BluetoothSocket mmSocket;
         private final InputStream mmInStream;
         private final OutputStream mmOutStream;
@@ -503,6 +456,20 @@ public class BluetoothSerial {
                 Log.e(TAG, "close() of connect socket failed", e);
             }
         }
+    }
+
+    private void tryCancelThread(CancellableThread thread) {
+        if (thread != null) {
+            thread.cancel();
+            thread = null;
+        }
+    }
+
+    private void tryCancelAllThreads() {
+        tryCancelThread(mConnectThread);
+        tryCancelThread(mConnectedThread);
+        tryCancelThread(mInsecureAcceptThread);
+        tryCancelThread(mSecureAcceptThread);
     }
 
 }

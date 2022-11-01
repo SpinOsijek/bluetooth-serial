@@ -100,6 +100,7 @@ public class BluetoothSerialPlugin extends Plugin {
         BluetoothDevice device = bluetoothAdapter.getRemoteDevice(macAddress);
         if (device != null) {
             implementation.connect(device, false);
+            call.resolve();
             buffer.setLength(0);
         } else {
             call.reject("Could not connect to " + macAddress);
