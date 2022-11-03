@@ -35,9 +35,9 @@ import java.util.Set;
 
 @SuppressLint("InlinedApi")
 @CapacitorPlugin(name = "BluetoothSerial", permissions = {
-        @Permission(strings = {Manifest.permission.BLUETOOTH_SCAN}, alias = "scan"),
-        @Permission(strings = {Manifest.permission.BLUETOOTH_CONNECT}, alias = "connect"),
-        @Permission(strings = {Manifest.permission.ACCESS_COARSE_LOCATION}, alias = "location")
+        @Permission(strings = {Manifest.permission.BLUETOOTH_SCAN}, alias = BluetoothSerialPlugin.SCAN),
+        @Permission(strings = {Manifest.permission.BLUETOOTH_CONNECT}, alias = BluetoothSerialPlugin.CONNECT),
+        @Permission(strings = {Manifest.permission.ACCESS_COARSE_LOCATION}, alias = BluetoothSerialPlugin.LOCATION)
 })
 public class BluetoothSerialPlugin extends Plugin {
 
@@ -57,6 +57,10 @@ public class BluetoothSerialPlugin extends Plugin {
     // Key names received from the BluetoothChatService Handler
     public static final String DEVICE_NAME = "device_name";
     public static final String TOAST = "toast";
+
+    public static final String CONNECT = "connect";
+    public static final String SCAN = "scan";
+    public static final String LOCATION = "location";
 
     StringBuffer buffer = new StringBuffer();
 
@@ -89,10 +93,10 @@ public class BluetoothSerialPlugin extends Plugin {
 
     @PluginMethod
     public void connect(PluginCall call) {
-        if (hasCompatPermission("connect")) {
+        if (hasCompatPermission(CONNECT)) {
             connectToDevice(call);
         } else {
-            requestPermissionForAlias("connect", call, call.getMethodName());
+            requestPermissionForAlias(CONNECT, call, call.getMethodName());
         }
     }
 
@@ -110,7 +114,7 @@ public class BluetoothSerialPlugin extends Plugin {
 
     @PermissionCallback
     private void connectPermsCallback(PluginCall call) {
-        if (hasCompatPermission("connect")) {
+        if (hasCompatPermission(CONNECT)) {
             connectToDevice(call);
         } else {
             call.reject("Connect permission denied");
@@ -177,10 +181,10 @@ public class BluetoothSerialPlugin extends Plugin {
 
     @PluginMethod
     public void enable(PluginCall call) {
-        if (getPermissionState("location") == PermissionState.GRANTED) {
+        if (getPermissionState(LOCATION) == PermissionState.GRANTED) {
             enableBluetooth(call);
         } else {
-            requestPermissionForAlias("location", call, "enablePermsCallback");
+            requestPermissionForAlias(LOCATION, call, "enablePermsCallback");
         }
     }
 
@@ -191,7 +195,7 @@ public class BluetoothSerialPlugin extends Plugin {
 
     @PermissionCallback
     private void enablePermsCallback(PluginCall call) {
-        if (getPermissionState("location") == PermissionState.GRANTED) {
+        if (getPermissionState(LOCATION) == PermissionState.GRANTED) {
             enableBluetooth(call);
         } else {
             call.reject("Location permission denied");
@@ -209,16 +213,16 @@ public class BluetoothSerialPlugin extends Plugin {
 
     @PluginMethod
     public void list(PluginCall call) {
-        if (hasCompatPermission("connect")) {
+        if (hasCompatPermission(CONNECT)) {
             listPairedDevices(call);
         } else {
-            requestPermissionForAlias("connect", call, "listPermsCallback");
+            requestPermissionForAlias(CONNECT, call, "listPermsCallback");
         }
     }
 
     @PermissionCallback
     private void listPermsCallback(PluginCall call) {
-        if (hasCompatPermission("connect")) {
+        if (hasCompatPermission(CONNECT)) {
             listPairedDevices(call);
         } else {
             call.reject("Connect permission denied");
@@ -239,16 +243,16 @@ public class BluetoothSerialPlugin extends Plugin {
 
     @PluginMethod
     public void discover(PluginCall call) {
-        if (hasCompatPermission("scan")) {
+        if (hasCompatPermission(SCAN)) {
             startDiscovery(call);
         } else {
-            requestPermissionForAlias("scan", call, "discoverPermsCallback");
+            requestPermissionForAlias(SCAN, call, "discoverPermsCallback");
         }
     }
 
     @PermissionCallback
     private void discoverPermsCallback(PluginCall call) {
-        if (hasCompatPermission("scan")) {
+        if (hasCompatPermission(SCAN)) {
             startDiscovery(call);
         } else {
             call.reject("Scan permission denied");
