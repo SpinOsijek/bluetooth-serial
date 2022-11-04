@@ -64,6 +64,24 @@ public class BluetoothSerial {
         return value;
     }
 
+    public BluetoothDevice getRemoteDevice(String address) {
+        return mAdapter.getRemoteDevice(address);
+    }
+
+    public boolean isEnabled() {
+        return mAdapter.isEnabled();
+    }
+
+    @SuppressLint("MissingPermission")
+    public Set<BluetoothDevice> getBondedDevices() {
+        return mAdapter.getBondedDevices();
+    }
+
+    @SuppressLint("MissingPermission")
+    public boolean startDiscovery() {
+        return mAdapter.startDiscovery();
+    }
+
     /**
      * Set the current state of the chat connection
      *

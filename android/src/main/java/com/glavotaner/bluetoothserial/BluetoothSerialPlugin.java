@@ -41,7 +41,6 @@ import java.util.Set;
 })
 public class BluetoothSerialPlugin extends Plugin {
 
-    private BluetoothAdapter bluetoothAdapter;
     private BluetoothSerial implementation;
 
     // Debugging
@@ -101,7 +100,7 @@ public class BluetoothSerialPlugin extends Plugin {
 
     private void connectToDevice(PluginCall call) {
         String macAddress = call.getString("address");
-        BluetoothDevice device = bluetoothAdapter.getRemoteDevice(macAddress);
+        BluetoothDevice device = implementation.getRemoteDevice(macAddress);
         if (device != null) {
             implementation.connect(device, false);
             call.resolve();
@@ -227,7 +226,7 @@ public class BluetoothSerialPlugin extends Plugin {
     private void listPairedDevices(PluginCall call) {
         JSONArray deviceList = new JSONArray();
         @SuppressLint("MissingPermission")
-        Set<BluetoothDevice> bondedDevices = bluetoothAdapter.getBondedDevices();
+        Set<BluetoothDevice> bondedDevices = implementation.getBondedDevices();
         for (BluetoothDevice device : bondedDevices) {
             deviceList.put(deviceToJSON(device));
         }
@@ -275,7 +274,7 @@ public class BluetoothSerialPlugin extends Plugin {
         Activity activity = getActivity();
         activity.registerReceiver(discoverReceiver, new IntentFilter(BluetoothDevice.ACTION_FOUND));
         activity.registerReceiver(discoverReceiver, new IntentFilter(BluetoothAdapter.ACTION_DISCOVERY_FINISHED));
-        bluetoothAdapter.startDiscovery();
+        implementation.startDiscovery();
     }
 
     @SuppressLint("MissingPermission")
