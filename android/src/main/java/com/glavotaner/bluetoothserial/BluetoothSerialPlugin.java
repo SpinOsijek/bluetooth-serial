@@ -86,8 +86,7 @@ public class BluetoothSerialPlugin extends Plugin {
     @PluginMethod
     public void echo(PluginCall call) {
         String value = call.getString("value");
-        JSObject ret = new JSObject();
-        ret.put("value", implementation.echo(value));
+        JSObject ret = new JSObject().put("value", implementation.echo(value));
         call.resolve(ret);
     }
 
@@ -139,22 +138,19 @@ public class BluetoothSerialPlugin extends Plugin {
         int length = buffer.length();
         String data = buffer.substring(0, length);
         buffer.delete(0, length);
-        JSObject result = new JSObject();
-        result.put("data", data);
+        JSObject result = new JSObject().put("data", data);
         call.resolve(result);
     }
 
     @PluginMethod
     public void available(PluginCall call) {
-        JSObject result = new JSObject();
-        result.put("available", buffer.length());
+        JSObject result = new JSObject().put("available", buffer.length());
         call.resolve(result);
     }
 
     @PluginMethod
     public void isEnabled(PluginCall call) {
-        JSObject result = new JSObject();
-        result.put("isEnabled", bluetoothAdapter.isEnabled());
+        JSObject result = new JSObject().put("isEnabled", implementation.isEnabled());
         call.resolve(result);
     }
 
@@ -206,8 +202,7 @@ public class BluetoothSerialPlugin extends Plugin {
     private void enableBluetoothActivityCallback(PluginCall call, ActivityResult activityResult) {
         boolean isEnabled = activityResult.getResultCode() == Activity.RESULT_OK;
         Log.d(TAG, "User enabled Bluetooth: " + isEnabled);
-        JSObject result = new JSObject();
-        result.put("isEnabled", isEnabled);
+        JSObject result = new JSObject().put("isEnabled", isEnabled);
         call.resolve(result);
     }
 
@@ -236,8 +231,7 @@ public class BluetoothSerialPlugin extends Plugin {
         for (BluetoothDevice device : bondedDevices) {
             deviceList.put(deviceToJSON(device));
         }
-        JSObject result = new JSObject();
-        result.put("devices", deviceList);
+        JSObject result = new JSObject().put("devices", deviceList);
         call.resolve(result);
     }
 
@@ -269,11 +263,9 @@ public class BluetoothSerialPlugin extends Plugin {
                 String action = intent.getAction();
                 if (BluetoothDevice.ACTION_FOUND.equals(action)) {
                     BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
-                    JSONObject o = deviceToJSON(device);
-                    unpairedDevices.put(o);
+                    unpairedDevices.put(deviceToJSON(device));
                 } else if (BluetoothAdapter.ACTION_DISCOVERY_FINISHED.equals(action)) {
-                    JSObject result = new JSObject();
-                    result.put("devices", unpairedDevices);
+                    JSObject result = new JSObject().put("devices", unpairedDevices);
                     call.resolve(result);
                     getActivity().unregisterReceiver(this);
                 }
@@ -288,10 +280,10 @@ public class BluetoothSerialPlugin extends Plugin {
 
     @SuppressLint("MissingPermission")
     private JSObject deviceToJSON(BluetoothDevice device) {
-        JSObject json = new JSObject();
-        json.put("name", device.getName());
-        json.put("address", device.getAddress());
-        json.put("id", device.getAddress());
+        JSObject json = new JSObject()
+                .put("name", device.getName())
+                .put("address", device.getAddress())
+                .put("id", device.getAddress());
         if (device.getBluetoothClass() != null) {
             json.put("class", device.getBluetoothClass().getDeviceClass());
         }
