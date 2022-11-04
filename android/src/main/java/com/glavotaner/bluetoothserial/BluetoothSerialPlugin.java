@@ -96,7 +96,7 @@ public class BluetoothSerialPlugin extends Plugin {
         if (hasCompatPermission(CONNECT)) {
             connectToDevice(call);
         } else {
-            requestPermissionForAlias(CONNECT, call, call.getMethodName());
+            requestPermissionForAlias(CONNECT, call, "connectPermsCallback");
         }
     }
 
