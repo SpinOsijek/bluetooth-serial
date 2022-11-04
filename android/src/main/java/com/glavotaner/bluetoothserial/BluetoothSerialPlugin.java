@@ -113,7 +113,7 @@ public class BluetoothSerialPlugin extends Plugin {
 
     @PermissionCallback
     private void connectPermsCallback(PluginCall call) {
-        if (hasCompatPermission(CONNECT)) {
+        if (getPermissionState(CONNECT) == PermissionState.GRANTED) {
             connectToDevice(call);
         } else {
             call.reject("Connect permission denied");
@@ -128,7 +128,7 @@ public class BluetoothSerialPlugin extends Plugin {
 
     @PluginMethod
     public void write(PluginCall call) throws JSONException {
-        byte[] data = (byte[])call.getData().get("data");
+        byte[] data = (byte[]) call.getData().get("data");
         implementation.write(data);
         call.resolve();
     }
@@ -217,7 +217,7 @@ public class BluetoothSerialPlugin extends Plugin {
 
     @PermissionCallback
     private void listPermsCallback(PluginCall call) {
-        if (hasCompatPermission(CONNECT)) {
+        if (getPermissionState(CONNECT) == PermissionState.GRANTED) {
             listPairedDevices(call);
         } else {
             call.reject("Connect permission denied");
@@ -246,7 +246,7 @@ public class BluetoothSerialPlugin extends Plugin {
 
     @PermissionCallback
     private void discoverPermsCallback(PluginCall call) {
-        if (hasCompatPermission(SCAN)) {
+        if (getPermissionState(SCAN) == PermissionState.GRANTED) {
             startDiscovery(call);
         } else {
             call.reject("Scan permission denied");
