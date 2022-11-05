@@ -16,6 +16,7 @@ import android.provider.Settings;
 import android.util.Log;
 
 import androidx.activity.result.ActivityResult;
+import androidx.annotation.NonNull;
 
 import com.getcapacitor.JSObject;
 import com.getcapacitor.PermissionState;
@@ -27,6 +28,7 @@ import com.getcapacitor.annotation.CapacitorPlugin;
 import com.getcapacitor.annotation.Permission;
 import com.getcapacitor.annotation.PermissionCallback;
 
+import org.jetbrains.annotations.Contract;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -41,26 +43,14 @@ import java.util.Set;
 })
 public class BluetoothSerialPlugin extends Plugin {
 
-    private BluetoothSerial implementation;
-
     // Debugging
     private static final String TAG = "BluetoothSerial";
-
-    // Message types sent from the BluetoothSerialService Handler
-    public static final int MESSAGE_STATE_CHANGE = 1;
-    public static final int MESSAGE_READ = 2;
-    public static final int MESSAGE_WRITE = 3;
-    public static final int MESSAGE_DEVICE_NAME = 4;
-    public static final int MESSAGE_TOAST = 5;
-
-    // Key names received from the BluetoothChatService Handler
-    public static final String DEVICE_NAME = "device_name";
-    public static final String TOAST = "toast";
 
     public static final String CONNECT = "connect";
     public static final String SCAN = "scan";
     public static final String LOCATION = "location";
 
+    private BluetoothSerial implementation;
     private PluginCall connectCall;
 
     StringBuffer buffer = new StringBuffer();
@@ -68,30 +58,12 @@ public class BluetoothSerialPlugin extends Plugin {
     @Override
     public void load() {
         super.load();
-        Handler mHandler = new Handler(Looper.myLooper(), message -> {
-            Log.d("BT-Message", message.toString());
-            switch (message.what) {
-                case MESSAGE_READ: buffer.append((String) message.obj); break;
-                case MESSAGE_DEVICE_NAME: {
-                    if (connectCall != null) {
-                        String device = (String) message.obj;
-                        connectCall.resolve(new JSObject().put("device", device));
-                    }
-                }
-                case MESSAGE_TOAST: {
-                    if (connectCall != null) {
-                        String error = (String) message.obj;
-                        connectCall.reject(error);
-                    }
-                }
-            }
-            return false;
-        });
+        Handler mHandler = getHandler();
         implementation = new BluetoothSerial(mHandler);
     }
 
     @PluginMethod
-    public void echo(PluginCall call) {
+    public void echo(@NonNull PluginCall call) {
         String value = call.getString("value");
         JSObject ret = new JSObject().put("value", implementation.echo(value));
         call.resolve(ret);
@@ -106,7 +78,7 @@ public class BluetoothSerialPlugin extends Plugin {
         }
     }
 
-    private void connectToDevice(PluginCall call) {
+    private void connectToDevice(@NonNull PluginCall call) {
         String macAddress = call.getString("address");
         BluetoothDevice device = implementation.getRemoteDevice(macAddress);
         if (device != null) {
@@ -128,20 +100,20 @@ public class BluetoothSerialPlugin extends Plugin {
     }
 
     @PluginMethod
-    public void disconnect(PluginCall call) {
+    public void disconnect(@NonNull PluginCall call) {
         implementation.stop();
         call.resolve();
     }
 
     @PluginMethod
-    public void write(PluginCall call) throws JSONException {
+    public void write(@NonNull PluginCall call) throws JSONException {
         byte[] data = (byte[]) call.getData().get("data");
         implementation.write(data);
         call.resolve();
     }
 
     @PluginMethod
-    public void read(PluginCall call) {
+    public void read(@NonNull PluginCall call) {
         int length = buffer.length();
         String data = buffer.substring(0, length);
         buffer.delete(0, length);
@@ -150,19 +122,19 @@ public class BluetoothSerialPlugin extends Plugin {
     }
 
     @PluginMethod
-    public void available(PluginCall call) {
+    public void available(@NonNull PluginCall call) {
         JSObject result = new JSObject().put("available", buffer.length());
         call.resolve(result);
     }
 
     @PluginMethod
-    public void isEnabled(PluginCall call) {
+    public void isEnabled(@NonNull PluginCall call) {
         JSObject result = new JSObject().put("isEnabled", implementation.isEnabled());
         call.resolve(result);
     }
 
     @PluginMethod
-    public void isConnected(PluginCall call) {
+    public void isConnected(@NonNull PluginCall call) {
         int bluetoothState = implementation.getState();
         JSObject result = new JSObject()
                 .put("isConnected", bluetoothState == ConnectionState.CONNECTED);
@@ -170,13 +142,13 @@ public class BluetoothSerialPlugin extends Plugin {
     }
 
     @PluginMethod
-    public void clear(PluginCall call) {
+    public void clear(@NonNull PluginCall call) {
         buffer.setLength(0);
         call.resolve();
     }
 
     @PluginMethod
-    public void settings(PluginCall call) {
+    public void settings(@NonNull PluginCall call) {
         Intent bluetoothSettingsIntent = new Intent(Settings.ACTION_BLUETOOTH_SETTINGS);
         getActivity().startActivity(bluetoothSettingsIntent);
         call.resolve();
@@ -206,7 +178,7 @@ public class BluetoothSerialPlugin extends Plugin {
     }
 
     @ActivityCallback
-    private void enableBluetoothActivityCallback(PluginCall call, ActivityResult activityResult) {
+    private void enableBluetoothActivityCallback(@NonNull PluginCall call, @NonNull ActivityResult activityResult) {
         boolean isEnabled = activityResult.getResultCode() == Activity.RESULT_OK;
         Log.d(TAG, "User enabled Bluetooth: " + isEnabled);
         JSObject result = new JSObject().put("isEnabled", isEnabled);
@@ -266,7 +238,7 @@ public class BluetoothSerialPlugin extends Plugin {
 
             private final JSONArray unpairedDevices = new JSONArray();
 
-            public void onReceive(Context context, Intent intent) {
+            public void onReceive(Context context, @NonNull Intent intent) {
                 String action = intent.getAction();
                 if (BluetoothDevice.ACTION_FOUND.equals(action)) {
                     BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
@@ -286,7 +258,7 @@ public class BluetoothSerialPlugin extends Plugin {
     }
 
     @SuppressLint("MissingPermission")
-    private JSObject deviceToJSON(BluetoothDevice device) {
+    private JSObject deviceToJSON(@NonNull BluetoothDevice device) {
         JSObject json = new JSObject()
                 .put("name", device.getName())
                 .put("address", device.getAddress())
@@ -311,6 +283,30 @@ public class BluetoothSerialPlugin extends Plugin {
         } else {
             return true;
         }
+    }
+
+    @NonNull
+    @Contract(" -> new")
+    private Handler getHandler() {
+        return new Handler(Looper.myLooper(), message -> {
+            Log.d("BT-Message", message.toString());
+            switch (message.what) {
+                case Messages.READ: buffer.append((String) message.obj); break;
+                case Messages.STATE_CHANGE: {
+                    if (connectCall != null) {
+                        String device = (String) message.obj;
+                        connectCall.resolve(new JSObject().put("device", device));
+                    }
+                }
+                case Messages.CONNECTION_ERROR: {
+                    if (connectCall != null) {
+                        String error = (String) message.obj;
+                        connectCall.reject(error);
+                    }
+                }
+            }
+            return false;
+        });
     }
 
 }

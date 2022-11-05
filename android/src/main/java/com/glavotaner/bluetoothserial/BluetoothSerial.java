@@ -140,17 +140,17 @@ public class BluetoothSerial {
         mConnectedThread = new ConnectedThread(socket, socketType);
         mConnectedThread.start();
         // Send the name of the connected device back to the UI Activity
-        Message msg = mHandler.obtainMessage(BluetoothSerialPlugin.MESSAGE_DEVICE_NAME);
+        Message msg = mHandler.obtainMessage(Messages.DEVICE_NAME);
         Bundle bundle = new Bundle();
-        bundle.putString(BluetoothSerialPlugin.DEVICE_NAME, device.getName());
+        bundle.putString("deviceName", device.getName());
         msg.setData(bundle);
         setState(ConnectionState.CONNECTED);
     }
 
     private void sendConnectionErrorToPlugin(String message) {
-        Message msg = mHandler.obtainMessage(BluetoothSerialPlugin.MESSAGE_TOAST);
+        Message msg = mHandler.obtainMessage(Messages.CONNECTION_ERROR);
         Bundle bundle = new Bundle();
-        bundle.putString(BluetoothSerialPlugin.TOAST, message);
+        bundle.putString("connectionError", message);
         msg.setData(bundle);
         mHandler.sendMessage(msg);
     }
@@ -174,7 +174,7 @@ public class BluetoothSerial {
     }
 
     private void sendStateToPlugin(int state) {
-        mHandler.obtainMessage(BluetoothSerialPlugin.MESSAGE_STATE_CHANGE, state, -1).sendToTarget();
+        mHandler.obtainMessage(Messages.STATE_CHANGE, state, -1).sendToTarget();
     }
 
     /**
@@ -282,7 +282,7 @@ public class BluetoothSerial {
                     // Read from the InputStream
                     String data = getBufferData(buffer);
                     // Send the new data String to the UI Activity
-                    mHandler.obtainMessage(BluetoothSerialPlugin.MESSAGE_READ, data).sendToTarget();
+                    mHandler.obtainMessage(Messages.READ, data).sendToTarget();
                 } catch (IOException e) {
                     Log.e(TAG, "disconnected", e);
                     // Send a failure message back to the Activity
@@ -309,7 +309,7 @@ public class BluetoothSerial {
             try {
                 mmOutStream.write(buffer);
                 // Share the sent message back to the UI Activity
-                mHandler.obtainMessage(BluetoothSerialPlugin.MESSAGE_WRITE, -1, -1, buffer).sendToTarget();
+                mHandler.obtainMessage(Messages.WRITE, -1, -1, buffer).sendToTarget();
             } catch (IOException e) {
                 Log.e(TAG, "Exception during write", e);
             }
