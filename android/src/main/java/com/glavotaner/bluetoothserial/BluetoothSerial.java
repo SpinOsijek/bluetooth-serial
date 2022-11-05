@@ -4,9 +4,8 @@ import android.annotation.SuppressLint;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothSocket;
-import android.os.Bundle;
-import android.os.Handler;
-import android.os.Message;
+import android.content.Context;
+import android.content.Intent;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
@@ -30,20 +29,23 @@ public class BluetoothSerial {
 
     // Member fields
     private final BluetoothAdapter mAdapter;
-    private final Handler mHandler;
+    private final Context context;
     private ConnectThread mConnectThread;
     private ConnectedThread mConnectedThread;
     private int mState;
 
-    /**
-     * Constructor. Prepares a new BluetoothSerial session.
-     *
-     * @param handler A Handler to send messages back to the UI Activity
-     */
-    public BluetoothSerial(Handler handler) {
+    private Intent getConnectionChangeIntent() {
+        return new Intent(Intents.CONNECTION_CHANGE);
+    }
+
+    private Intent getWriteIntent() {
+        return new Intent(Intents.WRITE);
+    }
+
+    public BluetoothSerial(Context context) {
+        this.context = context;
         mAdapter = BluetoothAdapter.getDefaultAdapter();
         mState = ConnectionState.NONE;
-        mHandler = handler;
     }
 
     public String echo(String value) {
@@ -139,20 +141,13 @@ public class BluetoothSerial {
         // Start the thread to manage the connection and perform transmissions
         mConnectedThread = new ConnectedThread(socket, socketType);
         mConnectedThread.start();
-        // Send the name of the connected device back to the UI Activity
-        Message msg = mHandler.obtainMessage(Messages.DEVICE_NAME);
-        Bundle bundle = new Bundle();
-        bundle.putString("deviceName", device.getName());
-        msg.setData(bundle);
-        setState(ConnectionState.CONNECTED);
+        Intent intent = getConnectionChangeIntent().putExtra("device", device);
+        context.sendBroadcast(intent);
     }
 
     private void sendConnectionErrorToPlugin(String message) {
-        Message msg = mHandler.obtainMessage(Messages.CONNECTION_ERROR);
-        Bundle bundle = new Bundle();
-        bundle.putString("connectionError", message);
-        msg.setData(bundle);
-        mHandler.sendMessage(msg);
+        Intent intent = getConnectionChangeIntent().putExtra("error", message);
+        context.sendBroadcast(intent);
     }
 
     /**
@@ -174,7 +169,8 @@ public class BluetoothSerial {
     }
 
     private void sendStateToPlugin(int state) {
-        mHandler.obtainMessage(Messages.STATE_CHANGE, state, -1).sendToTarget();
+        Intent stateChangeIntent = new Intent("stateChange");
+        context.sendBroadcast(stateChangeIntent.putExtra("state", state));
     }
 
     /**
@@ -282,10 +278,10 @@ public class BluetoothSerial {
                     // Read from the InputStream
                     String data = getBufferData(buffer);
                     // Send the new data String to the UI Activity
-                    mHandler.obtainMessage(Messages.READ, data).sendToTarget();
+                    Intent readIntent = new Intent("read").putExtra("data", data);
+                    context.sendBroadcast(readIntent);
                 } catch (IOException e) {
                     Log.e(TAG, "disconnected", e);
-                    // Send a failure message back to the Activity
                     sendConnectionErrorToPlugin("Device connection was lost");
                     startService();
                     break;
@@ -306,12 +302,14 @@ public class BluetoothSerial {
          * @param buffer The bytes to write
          */
         public void write(byte[] buffer) {
+            Intent intent = getWriteIntent();
             try {
                 mmOutStream.write(buffer);
                 // Share the sent message back to the UI Activity
-                mHandler.obtainMessage(Messages.WRITE, -1, -1, buffer).sendToTarget();
+                context.sendBroadcast(intent.putExtra("data", buffer));
             } catch (IOException e) {
                 Log.e(TAG, "Exception during write", e);
+                context.sendBroadcast(intent.putExtra("error", e.getMessage()));
             }
         }
 

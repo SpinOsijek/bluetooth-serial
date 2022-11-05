@@ -10,8 +10,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.Build;
-import android.os.Handler;
-import android.os.Looper;
 import android.provider.Settings;
 import android.util.Log;
 
@@ -28,10 +26,8 @@ import com.getcapacitor.annotation.CapacitorPlugin;
 import com.getcapacitor.annotation.Permission;
 import com.getcapacitor.annotation.PermissionCallback;
 
-import org.jetbrains.annotations.Contract;
 import org.json.JSONArray;
 import org.json.JSONException;
-import org.json.JSONObject;
 
 import java.util.Set;
 
@@ -52,14 +48,14 @@ public class BluetoothSerialPlugin extends Plugin {
 
     private BluetoothSerial implementation;
     private PluginCall connectCall;
+    private PluginCall writeCall;
 
     StringBuffer buffer = new StringBuffer();
 
     @Override
     public void load() {
         super.load();
-        Handler mHandler = getHandler();
-        implementation = new BluetoothSerial(mHandler);
+        implementation = new BluetoothSerial(getContext());
     }
 
     @PluginMethod
@@ -83,6 +79,8 @@ public class BluetoothSerialPlugin extends Plugin {
         BluetoothDevice device = implementation.getRemoteDevice(macAddress);
         if (device != null) {
             connectCall = call;
+            IntentFilter connectionFilter = new IntentFilter(Intents.CONNECTION_CHANGE);
+            getContext().registerReceiver(getConnectionChangeReceiver(), connectionFilter);
             implementation.connect(device, false);
             buffer.setLength(0);
         } else {
@@ -108,8 +106,10 @@ public class BluetoothSerialPlugin extends Plugin {
     @PluginMethod
     public void write(@NonNull PluginCall call) throws JSONException {
         byte[] data = (byte[]) call.getData().get("data");
+        writeCall = call;
+        IntentFilter writeFilter = new IntentFilter(Intents.WRITE);
+        getContext().registerReceiver(getWriteReceiver(), writeFilter);
         implementation.write(data);
-        call.resolve();
     }
 
     @PluginMethod
@@ -285,28 +285,35 @@ public class BluetoothSerialPlugin extends Plugin {
         }
     }
 
-    @NonNull
-    @Contract(" -> new")
-    private Handler getHandler() {
-        return new Handler(Looper.myLooper(), message -> {
-            Log.d("BT-Message", message.toString());
-            switch (message.what) {
-                case Messages.READ: buffer.append((String) message.obj); break;
-                case Messages.STATE_CHANGE: {
-                    if (connectCall != null) {
-                        String device = (String) message.obj;
-                        connectCall.resolve(new JSObject().put("device", device));
-                    }
+    private BroadcastReceiver getConnectionChangeReceiver() {
+        return new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                if (intent.hasExtra("device") && connectCall != null) {
+                    String deviceAddress = intent.getStringExtra("device");
+                    connectCall.resolve(new JSObject().put("device", deviceAddress));
+                } else if (connectCall != null) {
+                    connectCall.reject(intent.getStringExtra("error"));
                 }
-                case Messages.CONNECTION_ERROR: {
-                    if (connectCall != null) {
-                        String error = (String) message.obj;
-                        connectCall.reject(error);
-                    }
-                }
+                connectCall = null;
+                context.unregisterReceiver(this);
             }
-            return false;
-        });
+        };
+    }
+
+    private BroadcastReceiver getWriteReceiver() {
+        return new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                if (intent.hasExtra("data") && writeCall != null) {
+                    writeCall.resolve();
+                } else if (writeCall != null) {
+                    writeCall.reject(intent.getStringExtra("error"));
+                }
+                writeCall = null;
+                context.unregisterReceiver(this);
+            }
+        };
     }
 
 }
