@@ -3,7 +3,6 @@ package com.glavotaner.bluetoothserial;
 import android.annotation.SuppressLint;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
-import android.bluetooth.BluetoothServerSocket;
 import android.bluetooth.BluetoothSocket;
 import android.os.Bundle;
 import android.os.Handler;
@@ -23,14 +22,6 @@ public class BluetoothSerial {
     // Debugging
     private static final String TAG = "BluetoothSerialService";
     private static final boolean D = true;
-
-    // Name for the SDP record when creating server socket
-    private static final String NAME_SECURE = "PhoneGapBluetoothSerialServiceSecure";
-    private static final String NAME_INSECURE = "PhoneGapBluetoothSerialServiceInSecure";
-
-    // Unique UUID for this application
-    private static final UUID MY_UUID_SECURE = UUID.fromString("7A9C3B55-78D0-44A7-A94E-A93E3FE118CE");
-    private static final UUID MY_UUID_INSECURE = UUID.fromString("23F18142-B389-4772-93BD-52BDBB2C03E9");
 
     // Well known SPP UUID
     private static final UUID UUID_SPP = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB");
@@ -113,6 +104,19 @@ public class BluetoothSerial {
     }
 
     /**
+     * Stop all threads
+     */
+    public synchronized void stop() {
+        if (D) Log.d(TAG, "stop");
+        tryCancelAllThreads();
+        setState(ConnectionState.NONE);
+    }
+
+    private void startService() {
+        BluetoothSerial.this.start();
+    }
+
+    /**
      * Start the ConnectThread to initiate a connection to a remote device.
      *
      * @param device The BluetoothDevice to connect
@@ -157,12 +161,32 @@ public class BluetoothSerial {
     }
 
     /**
-     * Stop all threads
+     * Indicate that the connection attempt failed and notify the UI Activity.
      */
-    public synchronized void stop() {
-        if (D) Log.d(TAG, "stop");
-        tryCancelAllThreads();
-        setState(ConnectionState.NONE);
+    private void connectionFailed() {
+        // Send a failure message back to the Activity
+        Message msg = mHandler.obtainMessage(BluetoothSerialPlugin.MESSAGE_TOAST);
+        Bundle bundle = new Bundle();
+        bundle.putString(BluetoothSerialPlugin.TOAST, "Unable to connect to device");
+        msg.setData(bundle);
+        mHandler.sendMessage(msg);
+        // Start the service over to restart listening mode
+        startService();
+    }
+
+    /**
+     * Indicate that the connection was lost and notify the UI Activity.
+     */
+    private void connectionLost() {
+        // Send a failure message back to the Activity
+        Message msg = mHandler.obtainMessage(BluetoothSerialPlugin.MESSAGE_TOAST);
+        Bundle bundle = new Bundle();
+        bundle.putString(BluetoothSerialPlugin.TOAST, "Device connection was lost");
+        msg.setData(bundle);
+        mHandler.sendMessage(msg);
+
+        // Start the service over to restart listening mode
+        startService();
     }
 
     /**
@@ -184,125 +208,12 @@ public class BluetoothSerial {
     }
 
     /**
-     * Indicate that the connection attempt failed and notify the UI Activity.
-     */
-    private void connectionFailed() {
-        // Send a failure message back to the Activity
-        Message msg = mHandler.obtainMessage(BluetoothSerialPlugin.MESSAGE_TOAST);
-        Bundle bundle = new Bundle();
-        bundle.putString(BluetoothSerialPlugin.TOAST, "Unable to connect to device");
-        msg.setData(bundle);
-        mHandler.sendMessage(msg);
-        // Start the service over to restart listening mode
-        startService();
-    }
-
-    private void startService() {
-        BluetoothSerial.this.start();
-    }
-
-    /**
-     * Indicate that the connection was lost and notify the UI Activity.
-     */
-    private void connectionLost() {
-        // Send a failure message back to the Activity
-        Message msg = mHandler.obtainMessage(BluetoothSerialPlugin.MESSAGE_TOAST);
-        Bundle bundle = new Bundle();
-        bundle.putString(BluetoothSerialPlugin.TOAST, "Device connection was lost");
-        msg.setData(bundle);
-        mHandler.sendMessage(msg);
-
-        // Start the service over to restart listening mode
-        startService();
-    }
-
-    /**
-     * This thread runs while listening for incoming connections. It behaves
-     * like a server-side client. It runs until a connection is accepted
-     * (or until cancelled).
-     */
-    private class AcceptThread extends Thread implements CancellableThread {
-        // The local server socket
-        private final BluetoothServerSocket mmServerSocket;
-        private final String mSocketType;
-
-        @SuppressLint("MissingPermission")
-        public AcceptThread(boolean secure) {
-            BluetoothServerSocket tmp = null;
-            mSocketType = secure ? "Secure" : "Insecure";
-
-            // Create a new listening server socket
-            try {
-                if (secure) {
-                    tmp = mAdapter.listenUsingRfcommWithServiceRecord(NAME_SECURE, MY_UUID_SECURE);
-                } else {
-                    tmp = mAdapter.listenUsingInsecureRfcommWithServiceRecord(NAME_INSECURE, MY_UUID_INSECURE);
-                }
-            } catch (IOException e) {
-                Log.e(TAG, "Socket Type: " + mSocketType + "listen() failed", e);
-            }
-            mmServerSocket = tmp;
-        }
-
-        public void run() {
-            if (D) Log.d(TAG, "Socket Type: " + mSocketType + "BEGIN mAcceptThread" + this);
-            setName("AcceptThread" + mSocketType);
-
-            BluetoothSocket socket;
-
-            // Listen to the server socket if we're not connected
-            while (mState != ConnectionState.CONNECTED) {
-                try {
-                    // This is a blocking call and will only return on a
-                    // successful connection or an exception
-                    socket = mmServerSocket.accept();
-                } catch (IOException e) {
-                    Log.e(TAG, "Socket Type: " + mSocketType + "accept() failed", e);
-                    break;
-                }
-
-                // If a connection was accepted
-                if (socket != null) {
-                    synchronized (BluetoothSerial.this) {
-                        switch (mState) {
-                            case ConnectionState.CONNECTING:
-                                // Situation normal. Start the connected thread.
-                                connected(socket, socket.getRemoteDevice(), mSocketType);
-                                break;
-                            case ConnectionState.CONNECTED:
-                                // Either not ready or already connected. Terminate new socket.
-                                try {
-                                    socket.close();
-                                } catch (IOException e) {
-                                    Log.e(TAG, "Could not close unwanted socket", e);
-                                }
-                                break;
-                        }
-                    }
-                }
-            }
-            if (D) Log.i(TAG, "END mAcceptThread, socket Type: " + mSocketType);
-
-        }
-
-        public void cancel() {
-            if (D) Log.d(TAG, "Socket Type" + mSocketType + "cancel " + this);
-            try {
-                mmServerSocket.close();
-            } catch (IOException e) {
-                Log.e(TAG, "Socket Type" + mSocketType + "close() of server failed", e);
-            }
-        }
-    }
-
-
-    /**
      * This thread runs while attempting to make an outgoing connection
      * with a device. It runs straight through; the connection either
      * succeeds or fails.
      */
     private class ConnectThread extends Thread implements CancellableThread {
-        private /*final*/ BluetoothSocket mmSocket;
+        private final BluetoothSocket mmSocket;
         private final BluetoothDevice mmDevice;
         private final String mSocketType;
 
