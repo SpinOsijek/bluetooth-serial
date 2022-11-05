@@ -61,6 +61,8 @@ public class BluetoothSerialPlugin extends Plugin {
     public static final String SCAN = "scan";
     public static final String LOCATION = "location";
 
+    private PluginCall connectCall;
+
     StringBuffer buffer = new StringBuffer();
 
     @Override
@@ -68,12 +70,19 @@ public class BluetoothSerialPlugin extends Plugin {
         super.load();
         Handler mHandler = new Handler(Looper.myLooper(), message -> {
             Log.d("BT-Message", message.toString());
-            if (message.what == MESSAGE_READ) {
-                buffer.append((String) message.obj);
-            } else {
-                Runnable callback = message.getCallback();
-                if (callback != null) {
-                    callback.run();
+            switch (message.what) {
+                case MESSAGE_READ: buffer.append((String) message.obj); break;
+                case MESSAGE_DEVICE_NAME: {
+                    if (connectCall != null) {
+                        String device = (String) message.obj;
+                        connectCall.resolve(new JSObject().put("device", device));
+                    }
+                }
+                case MESSAGE_TOAST: {
+                    if (connectCall != null) {
+                        String error = (String) message.obj;
+                        connectCall.reject(error);
+                    }
                 }
             }
             return false;
@@ -101,8 +110,8 @@ public class BluetoothSerialPlugin extends Plugin {
         String macAddress = call.getString("address");
         BluetoothDevice device = implementation.getRemoteDevice(macAddress);
         if (device != null) {
+            connectCall = call;
             implementation.connect(device, false);
-            call.resolve();
             buffer.setLength(0);
         } else {
             call.reject("Could not connect to " + macAddress);
