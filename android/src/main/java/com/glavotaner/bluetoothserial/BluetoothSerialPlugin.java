@@ -66,7 +66,6 @@ public class BluetoothSerialPlugin extends Plugin {
     @Override
     public void load() {
         super.load();
-        bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
         Handler mHandler = new Handler(Looper.myLooper(), message -> {
             Log.d("BT-Message", message.toString());
             if (message.what == MESSAGE_READ) {
@@ -155,7 +154,7 @@ public class BluetoothSerialPlugin extends Plugin {
 
     @PluginMethod
     public void isConnected(PluginCall call) {
-        ConnectionState bluetoothState = implementation.getState();
+        int bluetoothState = implementation.getState();
         JSObject result = new JSObject()
                 .put("isConnected", bluetoothState == ConnectionState.CONNECTED);
         call.resolve(result);

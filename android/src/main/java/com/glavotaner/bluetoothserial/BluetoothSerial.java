@@ -15,6 +15,7 @@ import com.glavotaner.bluetoothserial.threads.CancellableThread;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.Set;
 import java.util.UUID;
 
 public class BluetoothSerial {
@@ -41,7 +42,7 @@ public class BluetoothSerial {
     private AcceptThread mInsecureAcceptThread;
     private ConnectThread mConnectThread;
     private ConnectedThread mConnectedThread;
-    private ConnectionState mState;
+    private int mState;
 
     /**
      * Constructor. Prepares a new BluetoothSerial session.
@@ -72,8 +73,8 @@ public class BluetoothSerial {
     }
 
     @SuppressLint("MissingPermission")
-    public boolean startDiscovery() {
-        return mAdapter.startDiscovery();
+    public void startDiscovery() {
+        mAdapter.startDiscovery();
     }
 
     /**
@@ -81,7 +82,7 @@ public class BluetoothSerial {
      *
      * @param state An integer defining the current connection state
      */
-    private synchronized void setState(ConnectionState state) {
+    private synchronized void setState(int state) {
         if (D) Log.d(TAG, "setState() " + mState + " -> " + state);
         mState = state;
 
@@ -92,7 +93,7 @@ public class BluetoothSerial {
     /**
      * Return the current connection state.
      */
-    public synchronized ConnectionState getState() {
+    public synchronized int getState() {
         return mState;
     }
 
@@ -266,14 +267,14 @@ public class BluetoothSerial {
                 if (socket != null) {
                     synchronized (BluetoothSerial.this) {
                         switch (mState) {
-                            case LISTEN:
-                            case CONNECTING:
+                            case ConnectionState.LISTEN:
+                            case ConnectionState.CONNECTING:
                                 // Situation normal. Start the connected thread.
                                 connected(socket, socket.getRemoteDevice(),
                                         mSocketType);
                                 break;
-                            case NONE:
-                            case CONNECTED:
+                            case ConnectionState.NONE:
+                            case ConnectionState.CONNECTED:
                                 // Either not ready or already connected. Terminate new socket.
                                 try {
                                     socket.close();
