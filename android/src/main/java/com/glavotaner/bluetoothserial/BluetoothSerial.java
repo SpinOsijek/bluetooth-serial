@@ -38,8 +38,6 @@ public class BluetoothSerial {
     // Member fields
     private final BluetoothAdapter mAdapter;
     private final Handler mHandler;
-    private AcceptThread mSecureAcceptThread;
-    private AcceptThread mInsecureAcceptThread;
     private ConnectThread mConnectThread;
     private ConnectedThread mConnectedThread;
     private int mState;
@@ -267,13 +265,10 @@ public class BluetoothSerial {
                 if (socket != null) {
                     synchronized (BluetoothSerial.this) {
                         switch (mState) {
-                            case ConnectionState.LISTEN:
                             case ConnectionState.CONNECTING:
                                 // Situation normal. Start the connected thread.
-                                connected(socket, socket.getRemoteDevice(),
-                                        mSocketType);
+                                connected(socket, socket.getRemoteDevice(), mSocketType);
                                 break;
-                            case ConnectionState.NONE:
                             case ConnectionState.CONNECTED:
                                 // Either not ready or already connected. Terminate new socket.
                                 try {
@@ -348,29 +343,7 @@ public class BluetoothSerial {
                 Log.i(TAG, "Connected");
             } catch (IOException e) {
                 Log.e(TAG, e.toString());
-
-                // Some 4.1 devices have problems, try an alternative way to connect
-                // See https://github.com/don/BluetoothSerial/issues/89
-                try {
-                    Log.i(TAG, "Trying fallback...");
-                    mmSocket = (BluetoothSocket) mmDevice.getClass().getMethod(
-                            "createRfcommSocketToServiceRecord", UUID.class
-                    ).invoke(mmDevice, UUID_SPP);
-                    if (mmSocket != null) {
-                        mmSocket.connect();
-                    }
-                    // TODO throw if null
-                    Log.i(TAG, "Connected");
-                } catch (Exception e2) {
-                    Log.e(TAG, "Couldn't establish a Bluetooth connection.");
-                    try {
-                        mmSocket.close();
-                    } catch (IOException e3) {
-                        Log.e(TAG, "unable to close() " + mSocketType + " socket during connection failure", e3);
-                    }
-                    connectionFailed();
-                    return;
-                }
+                connectionFailed();
             }
 
             // Reset the ConnectThread because we're done
@@ -478,8 +451,6 @@ public class BluetoothSerial {
     private void tryCancelAllThreads() {
         tryCancelThread(mConnectThread);
         tryCancelThread(mConnectedThread);
-        tryCancelThread(mInsecureAcceptThread);
-        tryCancelThread(mSecureAcceptThread);
     }
 
 }
