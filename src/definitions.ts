@@ -26,7 +26,7 @@ export interface BluetoothDevice {
   class?: string;
 }
 
-type permissions = 'location' | 'scan' | 'connect';
-type PermissionStatus = { [permission in permissions]: PermissionState };
-type devices = { devices: BluetoothDevice[] };
-type discoverUnpairedCallback = (event: devices) => any;
+export type permissions = 'location' | 'scan' | 'connect';
+export type PermissionStatus = { [permission in permissions]: PermissionState };
+export type devices = { devices: BluetoothDevice[] };
+export type discoverUnpairedCallback = (event: devices) => any;
