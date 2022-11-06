@@ -132,17 +132,14 @@ public class BluetoothSerial {
      * Start the ConnectedThread to begin managing a Bluetooth connection
      *
      * @param socket The BluetoothSocket on which the connection was made
-     * @param device The BluetoothDevice that has been connected
      */
     @SuppressLint("MissingPermission")
-    public synchronized void startConnectedThread(BluetoothSocket socket, BluetoothDevice device, final String socketType) {
+    public synchronized void startConnectedThread(BluetoothSocket socket, final String socketType) {
         if (D) Log.d(TAG, "connected, Socket Type:" + socketType);
         tryCancelAllThreads();
         // Start the thread to manage the connection and perform transmissions
         mConnectedThread = new ConnectedThread(socket, socketType);
         mConnectedThread.start();
-        Intent intent = getConnectionChangeIntent().putExtra("device", device);
-        context.sendBroadcast(intent);
     }
 
     private void sendConnectionErrorToPlugin(String message) {
@@ -213,10 +210,14 @@ public class BluetoothSerial {
             mAdapter.cancelDiscovery();
             connectToSocket();
             // Reset the ConnectThread because we're done
-            synchronized (BluetoothSerial.this) {
-                mConnectThread = null;
-            }
-            startConnectedThread(mmSocket, mmDevice, mSocketType);
+            resetConnectThread();
+            startConnectedThread(mmSocket, mSocketType);
+            sendConnectedDeviceToPlugin();
+        }
+
+        private void sendConnectedDeviceToPlugin() {
+            Intent intent = getConnectionChangeIntent().putExtra("device", mmDevice);
+            context.sendBroadcast(intent);
         }
 
         @SuppressLint("MissingPermission")
@@ -239,6 +240,12 @@ public class BluetoothSerial {
             } catch (IOException e) {
                 Log.e(TAG, "close() of connect " + mSocketType + " socket failed", e);
             }
+        }
+    }
+
+    private void resetConnectThread() {
+        synchronized (BluetoothSerial.this) {
+            mConnectThread = null;
         }
     }
 
@@ -270,7 +277,6 @@ public class BluetoothSerial {
         public void run() {
             Log.i(TAG, "BEGIN mConnectedThread");
             byte[] buffer = new byte[1024];
-            int bytes;
 
             // Keep listening to the InputStream while connected
             while (true) {
@@ -291,8 +297,7 @@ public class BluetoothSerial {
 
         @NonNull
         private String getBufferData(byte[] buffer) throws IOException {
-            int bytes;
-            bytes = mmInStream.read(buffer);
+            int bytes = mmInStream.read(buffer);
             return new String(buffer, 0, bytes);
         }
 
