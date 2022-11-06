@@ -34,14 +34,6 @@ public class BluetoothSerial {
     private ConnectedThread mConnectedThread;
     private int mState;
 
-    private Intent getConnectionChangeIntent() {
-        return new Intent(Intents.CONNECTION_CHANGE);
-    }
-
-    private Intent getWriteIntent() {
-        return new Intent(Intents.WRITE);
-    }
-
     public BluetoothSerial(Context context) {
         this.context = context;
         mAdapter = BluetoothAdapter.getDefaultAdapter();
@@ -143,7 +135,7 @@ public class BluetoothSerial {
     }
 
     private void sendConnectionErrorToPlugin(String message) {
-        Intent intent = getConnectionChangeIntent().putExtra("error", message);
+        Intent intent = Intents.getConnectionChangeIntent().putExtra("error", message);
         context.sendBroadcast(intent);
     }
 
@@ -216,7 +208,7 @@ public class BluetoothSerial {
         }
 
         private void sendConnectedDeviceToPlugin() {
-            Intent intent = getConnectionChangeIntent().putExtra("device", mmDevice);
+            Intent intent = Intents.getConnectionChangeIntent().putExtra("device", mmDevice);
             context.sendBroadcast(intent);
         }
 
@@ -307,7 +299,7 @@ public class BluetoothSerial {
          * @param buffer The bytes to write
          */
         public void write(byte[] buffer) {
-            Intent intent = getWriteIntent();
+            Intent intent = Intents.getWriteIntent();
             try {
                 mmOutStream.write(buffer);
                 // Share the sent message back to the UI Activity
