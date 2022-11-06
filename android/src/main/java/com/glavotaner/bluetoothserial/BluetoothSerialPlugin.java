@@ -237,7 +237,7 @@ public class BluetoothSerialPlugin extends Plugin {
         final BroadcastReceiver discoverReceiver = new BroadcastReceiver() {
 
             private final JSONArray unpairedDevices = new JSONArray();
-            private final JSObject result = new JSObject();
+            private final JSObject result = new JSObject().put("devices", unpairedDevices);
 
             public void onReceive(Context context, @NonNull Intent intent) {
                 String action = intent.getAction();
@@ -251,6 +251,7 @@ public class BluetoothSerialPlugin extends Plugin {
                     getActivity().unregisterReceiver(this);
                 }
             }
+
         };
         Activity activity = getActivity();
         activity.registerReceiver(discoverReceiver, new IntentFilter(BluetoothDevice.ACTION_FOUND));
