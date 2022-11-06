@@ -215,7 +215,7 @@ public class BluetoothSerialPlugin extends Plugin {
     }
 
     @PluginMethod
-    public void discover(PluginCall call) {
+    public void discoverUnpaired(PluginCall call) {
         if (hasCompatPermission(SCAN)) {
             startDiscovery(call);
         } else {
@@ -237,20 +237,21 @@ public class BluetoothSerialPlugin extends Plugin {
         final BroadcastReceiver discoverReceiver = new BroadcastReceiver() {
 
             private final JSONArray unpairedDevices = new JSONArray();
+            private final JSObject result = new JSObject();
 
             public void onReceive(Context context, @NonNull Intent intent) {
                 String action = intent.getAction();
                 if (BluetoothDevice.ACTION_FOUND.equals(action)) {
                     BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
                     unpairedDevices.put(deviceToJSON(device));
+                    result.put("devices", unpairedDevices);
+                    notifyListeners("discoverUnpaired", result);
                 } else if (BluetoothAdapter.ACTION_DISCOVERY_FINISHED.equals(action)) {
-                    JSObject result = new JSObject().put("devices", unpairedDevices);
                     call.resolve(result);
                     getActivity().unregisterReceiver(this);
                 }
             }
         };
-
         Activity activity = getActivity();
         activity.registerReceiver(discoverReceiver, new IntentFilter(BluetoothDevice.ACTION_FOUND));
         activity.registerReceiver(discoverReceiver, new IntentFilter(BluetoothAdapter.ACTION_DISCOVERY_FINISHED));

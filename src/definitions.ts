@@ -1,3 +1,5 @@
+import type { PermissionState, PluginListenerHandle } from "@capacitor/core";
+
 export interface BluetoothSerialPlugin {
   echo(options: { value: string }): Promise<{ value: string }>;
   connect(options: { address: string }): Promise<void>;
@@ -10,8 +12,21 @@ export interface BluetoothSerialPlugin {
   clear(): Promise<void>;
   enable(): Promise<{ isEnabled: boolean }>;
   settings(): Promise<void>;
-  list(): Promise<any[]>;
-  discover(): Promise<any[]>;
-  checkPermissions(options: { permissions: string[] }): Promise<any[]>;
-  requestPermissions(options: { permissions: string[] }): Promise<any[]>;
+  list(): Promise<devices>;
+  discoverUnpaired(): Promise<devices>;
+  checkPermissions(options: { permissions: permissions[] }): Promise<PermissionStatus[]>;
+  requestPermissions(options: { permissions: permissions[] }): Promise<PermissionStatus[]>;
+  addListener(event: 'discoverUnpaired', listenerFunc: discoverUnpairedCallback): Promise<PluginListenerHandle> & PluginListenerHandle;
+  removeAllListeners(): Promise<void>;
 }
+
+export interface BluetoothDevice {
+  address: string;
+  name?: string;
+  class?: string;
+}
+
+type permissions = 'location' | 'scan' | 'connect';
+type PermissionStatus = { [permission in permissions]: PermissionState };
+type devices = { devices: BluetoothDevice[] };
+type discoverUnpairedCallback = (event: devices) => any;
