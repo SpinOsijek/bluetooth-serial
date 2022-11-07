@@ -6,6 +6,8 @@ import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothSocket;
 import android.content.Context;
 import android.content.Intent;
+import android.os.Handler;
+import android.os.Message;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
@@ -29,13 +31,15 @@ public class BluetoothSerial {
 
     // Member fields
     private final BluetoothAdapter mAdapter;
-    private final Context context;
     private ConnectThread mConnectThread;
     private ConnectedThread mConnectedThread;
+    private final Handler connectionHandler;
+    private final Handler writeHandler;
     private int mState;
 
-    public BluetoothSerial(Context context) {
-        this.context = context;
+    public BluetoothSerial(Handler connectionHandler, Handler writeHandler) {
+        this.connectionHandler = connectionHandler;
+        this.writeHandler = writeHandler;
         mAdapter = BluetoothAdapter.getDefaultAdapter();
         mState = ConnectionState.NONE;
     }
@@ -135,8 +139,7 @@ public class BluetoothSerial {
     }
 
     private void sendConnectionErrorToPlugin(String message) {
-        Intent intent = Intents.getConnectionChangeIntent().putExtra("error", message);
-        context.sendBroadcast(intent);
+        connectionHandler.obtainMessage(-1, message).sendToTarget();
     }
 
     /**
@@ -158,8 +161,7 @@ public class BluetoothSerial {
     }
 
     private void sendStateToPlugin(int state) {
-        Intent stateChangeIntent = new Intent("stateChange");
-        context.sendBroadcast(stateChangeIntent.putExtra("state", state));
+        connectionHandler.obtainMessage(0, 1).sendToTarget();
     }
 
     /**
@@ -208,8 +210,10 @@ public class BluetoothSerial {
         }
 
         private void sendConnectedDeviceToPlugin() {
-            Intent intent = Intents.getConnectionChangeIntent().putExtra("device", mmDevice);
-            context.sendBroadcast(intent);
+            Message message = connectionHandler.obtainMessage(0);
+            message.obj = mmDevice.getAddress();
+            message.arg1 = 2;
+            message.sendToTarget();
         }
 
         @SuppressLint("MissingPermission")
@@ -276,8 +280,7 @@ public class BluetoothSerial {
                     // Read from the InputStream
                     String data = getBufferData(buffer);
                     // Send the new data String to the UI Activity
-                    Intent readIntent = new Intent("read").putExtra("data", data);
-                    context.sendBroadcast(readIntent);
+                    // TODO send read
                 } catch (IOException e) {
                     Log.e(TAG, "disconnected", e);
                     sendConnectionErrorToPlugin("Device connection was lost");
@@ -300,14 +303,17 @@ public class BluetoothSerial {
          */
         public void write(byte[] buffer) {
             Intent intent = Intents.getWriteIntent();
+            Message message = writeHandler.obtainMessage();
             try {
                 mmOutStream.write(buffer);
                 // Share the sent message back to the UI Activity
-                context.sendBroadcast(intent.putExtra("data", buffer));
+                message.what = 0;
             } catch (IOException e) {
                 Log.e(TAG, "Exception during write", e);
-                context.sendBroadcast(intent.putExtra("error", e.getMessage()));
+                message.what = -1;
+                message.obj = e.getMessage();
             }
+            message.sendToTarget();
         }
 
         public void cancel() {

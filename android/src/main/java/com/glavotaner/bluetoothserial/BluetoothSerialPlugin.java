@@ -10,6 +10,8 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.Build;
+import android.os.Handler;
+import android.os.Looper;
 import android.provider.Settings;
 import android.util.Log;
 
@@ -55,7 +57,33 @@ public class BluetoothSerialPlugin extends Plugin {
     @Override
     public void load() {
         super.load();
-        implementation = new BluetoothSerial(getContext());
+        Looper looper = Looper.myLooper();
+        Handler connectionHandler = new Handler(looper, message -> {
+            if (message.what == 0 && connectCall != null) {
+                String device = (String) message.obj;
+                connectCall.resolve(new JSObject().put("device", device));
+                connectCall = null;
+            } else if (connectCall != null) {
+                String error = (String) message.obj;
+                connectCall.reject(error);
+                connectCall = null;
+            }
+            int connectionState = message.arg1;
+            notifyListeners("connectionChange", new JSObject().put("state", connectionState));
+            return false;
+        });
+        Handler writeHandler = new Handler(looper, message -> {
+            if (message.what == 0 && writeCall != null) {
+                writeCall.resolve();
+                writeCall = null;
+            } else if (writeCall != null) {
+                String error = (String) message.obj;
+                writeCall.reject(error);
+                writeCall = null;
+            }
+           return false;
+        });
+        implementation = new BluetoothSerial(connectionHandler, writeHandler);
     }
 
     @PluginMethod
@@ -79,8 +107,6 @@ public class BluetoothSerialPlugin extends Plugin {
         BluetoothDevice device = implementation.getRemoteDevice(macAddress);
         if (device != null) {
             connectCall = call;
-            IntentFilter connectionFilter = new IntentFilter(Intents.CONNECTION_CHANGE);
-            getContext().registerReceiver(getConnectionChangeReceiver(), connectionFilter);
             implementation.connect(device, false);
             buffer.setLength(0);
         } else {
@@ -107,8 +133,6 @@ public class BluetoothSerialPlugin extends Plugin {
     public void write(@NonNull PluginCall call) throws JSONException {
         byte[] data = (byte[]) call.getData().get("data");
         writeCall = call;
-        IntentFilter writeFilter = new IntentFilter(Intents.WRITE);
-        getContext().registerReceiver(getWriteReceiver(), writeFilter);
         implementation.write(data);
     }
 
@@ -285,37 +309,6 @@ public class BluetoothSerialPlugin extends Plugin {
         } else {
             return true;
         }
-    }
-
-    private BroadcastReceiver getConnectionChangeReceiver() {
-        return new BroadcastReceiver() {
-            @Override
-            public void onReceive(Context context, Intent intent) {
-                if (intent.hasExtra("device") && connectCall != null) {
-                    String deviceAddress = intent.getStringExtra("device");
-                    connectCall.resolve(new JSObject().put("device", deviceAddress));
-                } else if (connectCall != null) {
-                    connectCall.reject(intent.getStringExtra("error"));
-                }
-                connectCall = null;
-                context.unregisterReceiver(this);
-            }
-        };
-    }
-
-    private BroadcastReceiver getWriteReceiver() {
-        return new BroadcastReceiver() {
-            @Override
-            public void onReceive(Context context, Intent intent) {
-                if (intent.hasExtra("data") && writeCall != null) {
-                    writeCall.resolve();
-                } else if (writeCall != null) {
-                    writeCall.reject(intent.getStringExtra("error"));
-                }
-                writeCall = null;
-                context.unregisterReceiver(this);
-            }
-        };
     }
 
 }
