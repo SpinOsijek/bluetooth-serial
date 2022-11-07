@@ -1,5 +1,6 @@
 package com.glavotaner.bluetoothserial;
 
+import static com.glavotaner.bluetoothserial.Message.ERROR;
 import static com.glavotaner.bluetoothserial.Message.SUCCESS;
 
 import android.Manifest;
@@ -62,28 +63,28 @@ public class BluetoothSerialPlugin extends Plugin {
         super.load();
         Looper looper = Looper.myLooper();
         Handler connectionHandler = new Handler(looper, message -> {
-            if (message.what == SUCCESS && connectCall != null) {
+            int connectionState = message.arg1;
+            if (connectionState == ConnectionState.CONNECTED && connectCall != null) {
                 String device = (String) message.obj;
                 connectCall.resolve(new JSObject().put("device", device));
                 connectCall = null;
-            } else if (connectCall != null) {
+            }
+            if (message.what == ERROR && connectCall != null) {
                 String error = (String) message.obj;
                 connectCall.reject(error);
                 connectCall = null;
             }
-            int connectionState = message.arg1;
             notifyListeners("connectionChange", new JSObject().put("state", connectionState));
             return false;
         });
         Handler writeHandler = new Handler(looper, message -> {
             if (message.what == SUCCESS && writeCall != null) {
                 writeCall.resolve();
-                writeCall = null;
             } else if (writeCall != null) {
                 String error = (String) message.obj;
                 writeCall.reject(error);
-                writeCall = null;
             }
+            writeCall = null;
            return false;
         });
         implementation = new BluetoothSerial(connectionHandler, writeHandler);
