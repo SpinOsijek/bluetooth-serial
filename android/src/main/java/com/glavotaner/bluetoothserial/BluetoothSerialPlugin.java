@@ -102,7 +102,7 @@ public class BluetoothSerialPlugin extends Plugin {
     * Since Android < R doesn't require CONNECT and SCAN permissions, this returns GRANTED for those
     * and checks the true state of COARSE_LOCATION.
     * */
-    private void checkCompatPermissions(PluginCall pluginCall) {
+    private void checkCompatPermissions(@NonNull PluginCall pluginCall) {
         JSArray queriedPermissions = pluginCall.getArray("permissions");
         JSObject permissionResults = new JSObject();
         try {
@@ -116,7 +116,7 @@ public class BluetoothSerialPlugin extends Plugin {
         pluginCall.resolve(permissionResults);
     }
 
-    private PermissionState checkCompatPermission(String permissionAlias) {
+    private PermissionState checkCompatPermission(@NonNull String permissionAlias) {
         PermissionState permissionState = PermissionState.GRANTED;
         // CONNECT and SCAN are granted as they are not supported by this version of Android
         if (permissionAlias.equals(LOCATION)) {
