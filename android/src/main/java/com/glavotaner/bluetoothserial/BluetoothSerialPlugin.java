@@ -1,5 +1,7 @@
 package com.glavotaner.bluetoothserial;
 
+import static com.glavotaner.bluetoothserial.Message.SUCCESS;
+
 import android.Manifest;
 import android.annotation.SuppressLint;
 import android.app.Activity;
@@ -59,7 +61,7 @@ public class BluetoothSerialPlugin extends Plugin {
         super.load();
         Looper looper = Looper.myLooper();
         Handler connectionHandler = new Handler(looper, message -> {
-            if (message.what == 0 && connectCall != null) {
+            if (message.what == SUCCESS && connectCall != null) {
                 String device = (String) message.obj;
                 connectCall.resolve(new JSObject().put("device", device));
                 connectCall = null;
@@ -73,7 +75,7 @@ public class BluetoothSerialPlugin extends Plugin {
             return false;
         });
         Handler writeHandler = new Handler(looper, message -> {
-            if (message.what == 0 && writeCall != null) {
+            if (message.what == SUCCESS && writeCall != null) {
                 writeCall.resolve();
                 writeCall = null;
             } else if (writeCall != null) {

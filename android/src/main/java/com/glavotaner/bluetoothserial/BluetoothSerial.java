@@ -1,11 +1,12 @@
 package com.glavotaner.bluetoothserial;
 
+import static com.glavotaner.bluetoothserial.Message.ERROR;
+import static com.glavotaner.bluetoothserial.Message.SUCCESS;
+
 import android.annotation.SuppressLint;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothSocket;
-import android.content.Context;
-import android.content.Intent;
 import android.os.Handler;
 import android.os.Message;
 import android.util.Log;
@@ -138,8 +139,11 @@ public class BluetoothSerial {
         mConnectedThread.start();
     }
 
-    private void sendConnectionErrorToPlugin(String message) {
-        connectionHandler.obtainMessage(-1, message).sendToTarget();
+    private void sendConnectionErrorToPlugin(String error) {
+        Message message = connectionHandler.obtainMessage(ERROR);
+        message.obj = error;
+        message.arg1 = ConnectionState.NONE;
+        message.sendToTarget();
     }
 
     /**
@@ -161,7 +165,9 @@ public class BluetoothSerial {
     }
 
     private void sendStateToPlugin(int state) {
-        connectionHandler.obtainMessage(0, 1).sendToTarget();
+        Message message = connectionHandler.obtainMessage(SUCCESS);
+        message.arg1 = state;
+        message.sendToTarget();
     }
 
     /**
@@ -302,15 +308,14 @@ public class BluetoothSerial {
          * @param buffer The bytes to write
          */
         public void write(byte[] buffer) {
-            Intent intent = Intents.getWriteIntent();
             Message message = writeHandler.obtainMessage();
             try {
                 mmOutStream.write(buffer);
                 // Share the sent message back to the UI Activity
-                message.what = 0;
+                message.what = SUCCESS;
             } catch (IOException e) {
                 Log.e(TAG, "Exception during write", e);
-                message.what = -1;
+                message.what = ERROR;
                 message.obj = e.getMessage();
             }
             message.sendToTarget();
