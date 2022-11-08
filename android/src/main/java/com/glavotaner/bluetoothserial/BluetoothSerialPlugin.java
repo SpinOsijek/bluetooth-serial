@@ -91,11 +91,12 @@ public class BluetoothSerialPlugin extends Plugin {
     }
 
     @Override
+    @PluginMethod
     public void checkPermissions(PluginCall pluginCall) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            checkCompatPermissions(pluginCall);
-        } else {
             super.checkPermissions(pluginCall);
+        } else {
+            checkCompatPermissions(pluginCall);
         }
     }
 
