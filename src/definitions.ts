@@ -17,6 +17,7 @@ export interface BluetoothSerialPlugin {
   checkPermissions(options: { permissions: permissions[] }): Promise<PermissionStatus[]>;
   requestPermissions(options: { permissions: permissions[] }): Promise<PermissionStatus[]>;
   addListener(event: 'discoverUnpaired', listenerFunc: discoverUnpairedCallback): Promise<PluginListenerHandle> & PluginListenerHandle;
+  addListener(event: 'connectionChange', listenerFunc: connectionChangeCallback): Promise<PluginListenerHandle> & PluginListenerHandle;
   removeAllListeners(): Promise<void>;
 }
 
@@ -30,3 +31,7 @@ export type permissions = 'location' | 'scan' | 'connect';
 export type PermissionStatus = { [permission in permissions]: PermissionState };
 export type devices = { devices: BluetoothDevice[] };
 export type discoverUnpairedCallback = (event: devices) => any;
+export type connectionChangeCallback = (event: { state: ConnectionState }) => any;
+export enum ConnectionState {
+  NONE, CONNECTING, CONNECTED,
+}

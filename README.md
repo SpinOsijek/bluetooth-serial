@@ -29,9 +29,11 @@ npx cap sync
 * [`checkPermissions(...)`](#checkpermissions)
 * [`requestPermissions(...)`](#requestpermissions)
 * [`addListener('discoverUnpaired', ...)`](#addlistenerdiscoverunpaired)
+* [`addListener('connectionChange', ...)`](#addlistenerconnectionchange)
 * [`removeAllListeners()`](#removealllisteners)
 * [Interfaces](#interfaces)
 * [Type Aliases](#type-aliases)
+* [Enums](#enums)
 
 </docgen-index>
 
@@ -56,12 +58,14 @@ echo(options: { value: string; }) => Promise<{ value: string; }>
 ### connect(...)
 
 ```typescript
-connect(options: { address: string; }) => Promise<void>
+connect(options: { address: string; }) => Promise<BluetoothDevice>
 ```
 
 | Param         | Type                              |
 | ------------- | --------------------------------- |
 | **`options`** | <code>{ address: string; }</code> |
+
+**Returns:** <code>Promise&lt;<a href="#bluetoothdevice">BluetoothDevice</a>&gt;</code>
 
 --------------------
 
@@ -229,6 +233,22 @@ addListener(event: 'discoverUnpaired', listenerFunc: discoverUnpairedCallback) =
 --------------------
 
 
+### addListener('connectionChange', ...)
+
+```typescript
+addListener(event: 'connectionChange', listenerFunc: connectionChangeCallback) => Promise<PluginListenerHandle> & PluginListenerHandle
+```
+
+| Param              | Type                                                                          |
+| ------------------ | ----------------------------------------------------------------------------- |
+| **`event`**        | <code>'connectionChange'</code>                                               |
+| **`listenerFunc`** | <code><a href="#connectionchangecallback">connectionChangeCallback</a></code> |
+
+**Returns:** <code>Promise&lt;<a href="#pluginlistenerhandle">PluginListenerHandle</a>&gt; & <a href="#pluginlistenerhandle">PluginListenerHandle</a></code>
+
+--------------------
+
+
 ### removeAllListeners()
 
 ```typescript
@@ -283,5 +303,22 @@ removeAllListeners() => Promise<void>
 #### discoverUnpairedCallback
 
 <code>(event: <a href="#devices">devices</a>): any</code>
+
+
+#### connectionChangeCallback
+
+<code>(event: { state: <a href="#connectionstate">ConnectionState</a>; }): any</code>
+
+
+### Enums
+
+
+#### ConnectionState
+
+| Members          |
+| ---------------- |
+| **`NONE`**       |
+| **`CONNECTING`** |
+| **`CONNECTED`**  |
 
 </docgen-api>
