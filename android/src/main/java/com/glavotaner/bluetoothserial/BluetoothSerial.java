@@ -13,6 +13,7 @@ import android.util.Log;
 
 import androidx.annotation.NonNull;
 
+import com.getcapacitor.JSObject;
 import com.glavotaner.bluetoothserial.threads.CancellableThread;
 
 import java.io.IOException;
@@ -216,9 +217,9 @@ public class BluetoothSerial {
         }
 
         private void sendConnectedDeviceToPlugin() {
-            Message message = connectionHandler.obtainMessage(0);
-            message.obj = mmDevice.getAddress();
-            message.arg1 = 2;
+            JSObject device = BluetoothSerialPlugin.deviceToJSON(mmDevice);
+            Message message = connectionHandler.obtainMessage(SUCCESS, device);
+            message.arg1 = ConnectionState.CONNECTED;
             message.sendToTarget();
         }
 

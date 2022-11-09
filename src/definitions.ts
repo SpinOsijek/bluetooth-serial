@@ -2,7 +2,7 @@ import type { PermissionState, PluginListenerHandle } from "@capacitor/core";
 
 export interface BluetoothSerialPlugin {
   echo(options: { value: string }): Promise<{ value: string }>;
-  connect(options: { address: string }): Promise<void>;
+  connect(options: { address: string }): Promise<BluetoothDevice>;
   disconnect(): Promise<void>;
   read(): Promise<{ data: string }>;
   write(options: { data: string }): Promise<void>;

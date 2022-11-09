@@ -65,7 +65,7 @@ public class BluetoothSerialPlugin extends Plugin {
         Handler connectionHandler = new Handler(looper, message -> {
             int connectionState = message.arg1;
             if (connectionState == ConnectionState.CONNECTED && connectCall != null) {
-                String device = (String) message.obj;
+                JSObject device = (JSObject) message.obj;
                 connectCall.resolve(new JSObject().put("device", device));
                 connectCall = null;
             }
@@ -325,7 +325,7 @@ public class BluetoothSerialPlugin extends Plugin {
     }
 
     @SuppressLint("MissingPermission")
-    private JSObject deviceToJSON(@NonNull BluetoothDevice device) {
+    public static JSObject deviceToJSON(@NonNull BluetoothDevice device) {
         JSObject json = new JSObject()
                 .put("name", device.getName())
                 .put("address", device.getAddress())

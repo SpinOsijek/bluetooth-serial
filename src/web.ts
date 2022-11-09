@@ -1,11 +1,11 @@
 import { WebPlugin } from '@capacitor/core';
 
-import type { BluetoothSerialPlugin, devices, permissions, PermissionStatus } from './definitions';
+import type { BluetoothDevice, BluetoothSerialPlugin, devices, permissions, PermissionStatus } from './definitions';
 
 export class BluetoothSerialWeb
   extends WebPlugin
   implements BluetoothSerialPlugin {
-  connect(options: { address: string; }): Promise<void> {
+  connect(options: { address: string; }): Promise<BluetoothDevice> {
     throw new Error('Method not implemented.');
   }
   disconnect(): Promise<void> {
