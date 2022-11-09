@@ -14,7 +14,6 @@ import android.util.Log;
 
 import androidx.annotation.NonNull;
 
-import com.getcapacitor.JSObject;
 import com.glavotaner.bluetoothserial.threads.CancellableThread;
 
 import java.io.IOException;
@@ -169,7 +168,9 @@ public class BluetoothSerial {
 
     private void sendStateToPlugin(int state) {
         Message message = connectionHandler.obtainMessage(SUCCESS);
-        message.arg1 = state;
+        Bundle bundle = new Bundle();
+        bundle.putInt("state", state);
+        message.setData(bundle);
         message.sendToTarget();
     }
 
@@ -219,9 +220,16 @@ public class BluetoothSerial {
         }
 
         private void sendConnectedDeviceToPlugin() {
-            JSObject device = BluetoothSerialPlugin.deviceToJSON(mmDevice);
-            Message message = connectionHandler.obtainMessage(SUCCESS, device);
-            message.arg1 = ConnectionState.CONNECTED;
+            Message message = connectionHandler.obtainMessage(SUCCESS);
+            @SuppressLint("MissingPermission") BTDevice device = new BTDevice(
+                    mmDevice.getAddress(),
+                    mmDevice.getName(),
+                    "device"
+                    );
+            Bundle bundle = new Bundle();
+            bundle.putInt("state", ConnectionState.CONNECTED);
+            bundle.putParcelable("device", device);
+            message.setData(bundle);
             message.sendToTarget();
         }
 
@@ -318,7 +326,9 @@ public class BluetoothSerial {
                 message.what = SUCCESS;
             } catch (IOException e) {
                 Log.e(TAG, "Exception during write", e);
-                message.obj = e.getMessage();
+                Bundle bundle = new Bundle();
+                bundle.putString("error", e.getMessage());
+                message.setData(bundle);
             }
             message.sendToTarget();
         }
@@ -333,7 +343,11 @@ public class BluetoothSerial {
     }
 
     private void sendReadData(String data) {
-        readHandler.obtainMessage(SUCCESS, data).sendToTarget();
+        Message message = readHandler.obtainMessage(SUCCESS);
+        Bundle bundle = new Bundle();
+        bundle.putString("data", data);
+        message.setData(bundle);
+        message.sendToTarget();
     }
 
     private void tryCancelThread(CancellableThread thread) {

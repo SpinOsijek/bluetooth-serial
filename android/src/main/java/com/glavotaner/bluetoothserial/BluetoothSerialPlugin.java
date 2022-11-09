@@ -13,6 +13,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.Build;
+import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.provider.Settings;
@@ -63,14 +64,15 @@ public class BluetoothSerialPlugin extends Plugin {
         super.load();
         Looper looper = Looper.myLooper();
         Handler connectionHandler = new Handler(looper, message -> {
-            int connectionState = message.arg1;
+            Bundle data = message.getData();
+            int connectionState = data.getInt("state");
             if (connectionState == ConnectionState.CONNECTED && connectCall != null) {
-                JSObject device = (JSObject) message.obj;
-                connectCall.resolve(new JSObject().put("device", device));
+                BTDevice device = data.getParcelable("device");
+                connectCall.resolve(new JSObject().put("device", device.toJSObject()));
                 connectCall = null;
             }
             if (message.what == ERROR && connectCall != null) {
-                String error = (String) message.obj;
+                String error = data.getString("error");
                 connectCall.reject(error);
                 connectCall = null;
             }
@@ -81,14 +83,14 @@ public class BluetoothSerialPlugin extends Plugin {
             if (message.what == SUCCESS && writeCall != null) {
                 writeCall.resolve();
             } else if (writeCall != null) {
-                String error = (String) message.obj;
+                String error = message.getData().getString("error");
                 writeCall.reject(error);
             }
             writeCall = null;
            return false;
         });
         Handler readHandler = new Handler(looper, message -> {
-            buffer.append((String) message.obj);
+            buffer.append(message.getData().getString("data"));
             return false;
         });
         implementation = new BluetoothSerial(connectionHandler, writeHandler, readHandler);
