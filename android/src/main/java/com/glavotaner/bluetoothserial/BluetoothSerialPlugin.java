@@ -87,7 +87,11 @@ public class BluetoothSerialPlugin extends Plugin {
             writeCall = null;
            return false;
         });
-        implementation = new BluetoothSerial(connectionHandler, writeHandler);
+        Handler readHandler = new Handler(looper, message -> {
+            buffer.append((String) message.obj);
+            return false;
+        });
+        implementation = new BluetoothSerial(connectionHandler, writeHandler, readHandler);
     }
 
     @Override

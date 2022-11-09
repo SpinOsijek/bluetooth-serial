@@ -7,6 +7,7 @@ import android.annotation.SuppressLint;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothSocket;
+import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
 import android.util.Log;
@@ -37,11 +38,13 @@ public class BluetoothSerial {
     private ConnectedThread mConnectedThread;
     private final Handler connectionHandler;
     private final Handler writeHandler;
+    private final Handler readHandler;
     private int mState;
 
-    public BluetoothSerial(Handler connectionHandler, Handler writeHandler) {
+    public BluetoothSerial(Handler connectionHandler, Handler writeHandler, Handler readHandler) {
         this.connectionHandler = connectionHandler;
         this.writeHandler = writeHandler;
+        this.readHandler = readHandler;
         mAdapter = BluetoothAdapter.getDefaultAdapter();
         mState = ConnectionState.NONE;
     }
@@ -141,8 +144,7 @@ public class BluetoothSerial {
     }
 
     private void sendConnectionErrorToPlugin(String error) {
-        Message message = connectionHandler.obtainMessage(ERROR);
-        message.obj = error;
+        Message message = connectionHandler.obtainMessage(ERROR, error);
         message.arg1 = ConnectionState.NONE;
         message.sendToTarget();
     }
@@ -287,7 +289,7 @@ public class BluetoothSerial {
                     // Read from the InputStream
                     String data = getBufferData(buffer);
                     // Send the new data String to the UI Activity
-                    // TODO send read
+                    sendReadData(data);
                 } catch (IOException e) {
                     Log.e(TAG, "disconnected", e);
                     sendConnectionErrorToPlugin("Device connection was lost");
@@ -309,14 +311,13 @@ public class BluetoothSerial {
          * @param buffer The bytes to write
          */
         public void write(byte[] buffer) {
-            Message message = writeHandler.obtainMessage();
+            Message message = writeHandler.obtainMessage(ERROR);
             try {
                 mmOutStream.write(buffer);
                 // Share the sent message back to the UI Activity
                 message.what = SUCCESS;
             } catch (IOException e) {
                 Log.e(TAG, "Exception during write", e);
-                message.what = ERROR;
                 message.obj = e.getMessage();
             }
             message.sendToTarget();
@@ -329,6 +330,10 @@ public class BluetoothSerial {
                 Log.e(TAG, "close() of connect socket failed", e);
             }
         }
+    }
+
+    private void sendReadData(String data) {
+        readHandler.obtainMessage(SUCCESS, data).sendToTarget();
     }
 
     private void tryCancelThread(CancellableThread thread) {
