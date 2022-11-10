@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { WebPlugin } from '@capacitor/core';
 
 import type { BluetoothDevice, BluetoothSerialPlugin, devices, permissions, PermissionStatus } from './definitions';
@@ -5,7 +6,7 @@ import type { BluetoothDevice, BluetoothSerialPlugin, devices, permissions, Perm
 export class BluetoothSerialWeb
   extends WebPlugin
   implements BluetoothSerialPlugin {
-  connect(options: { address: string; }): Promise<BluetoothDevice> {
+  connect(_options: { address: string; }): Promise<BluetoothDevice> {
     throw new Error('Method not implemented.');
   }
   disconnect(): Promise<void> {
@@ -14,7 +15,7 @@ export class BluetoothSerialWeb
   read(): Promise<{ data: string; }> {
     throw new Error('Method not implemented.');
   }
-  write(options: { data: string; }): Promise<void> {
+  write(_options: { data: string; }): Promise<void> {
     throw new Error('Method not implemented.');
   }
   available(): Promise<boolean> {
@@ -41,10 +42,10 @@ export class BluetoothSerialWeb
   discoverUnpaired(): Promise<devices> {
     throw new Error('Method not implemented.');
   }
-  checkPermissions(options: { permissions: permissions[]; }): Promise<PermissionStatus[]> {
+  checkPermissions(_options: { permissions: permissions[]; }): Promise<PermissionStatus[]> {
     throw new Error('Method not implemented.');
   }
-  requestPermissions(options: { permissions: permissions[]; }): Promise<PermissionStatus[]> {
+  requestPermissions(_options: { permissions: permissions[]; }): Promise<PermissionStatus[]> {
     throw new Error('Method not implemented.');
   }
   async echo(options: { value: string }): Promise<{ value: string }> {
