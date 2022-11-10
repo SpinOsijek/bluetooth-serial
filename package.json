@@ -8,6 +8,9 @@
   "unpkg": "dist/plugin.js",
   "author": "glavotaner",
   "license": "MIT",
+  "publishConfig": {
+    "@GLAVOTANER:registry": "https://npm.pkg.github.com"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/Glavotaner/bluetooth-serial.git"
