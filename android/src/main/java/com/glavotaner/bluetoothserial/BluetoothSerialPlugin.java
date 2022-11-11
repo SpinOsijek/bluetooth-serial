@@ -7,6 +7,7 @@ import android.Manifest;
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.bluetooth.BluetoothAdapter;
+import android.bluetooth.BluetoothClass;
 import android.bluetooth.BluetoothDevice;
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -333,10 +334,10 @@ public class BluetoothSerialPlugin extends Plugin {
     public static JSObject deviceToJSON(@NonNull BluetoothDevice device) {
         JSObject json = new JSObject()
                 .put("name", device.getName())
-                .put("address", device.getAddress())
-                .put("id", device.getAddress());
-        if (device.getBluetoothClass() != null) {
-            json.put("class", device.getBluetoothClass().getDeviceClass());
+                .put("address", device.getAddress());
+        BluetoothClass btClass = device.getBluetoothClass();
+        if (btClass != null) {
+            json.put("class", btClass.getDeviceClass());
         }
         return json;
     }
