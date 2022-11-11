@@ -65,7 +65,7 @@ public class BluetoothSerialPlugin extends Plugin {
         Looper looper = Looper.myLooper();
         Handler connectionHandler = new Handler(looper, message -> {
             Bundle data = message.getData();
-            int connectionState = data.getInt("state");
+            ConnectionState connectionState = ConnectionState.values()[data.getInt("state")];
             if (connectionState == ConnectionState.CONNECTED && connectCall != null) {
                 BTDevice device = data.getParcelable("device");
                 connectCall.resolve(new JSObject().put("device", device.toJSObject()));
@@ -76,7 +76,8 @@ public class BluetoothSerialPlugin extends Plugin {
                 connectCall.reject(error);
                 connectCall = null;
             }
-            notifyListeners("connectionChange", new JSObject().put("state", connectionState));
+            JSObject result = new JSObject().put("state", connectionState.value());
+            notifyListeners("connectionChange", result);
             return false;
         });
         Handler writeHandler = new Handler(looper, message -> {
@@ -206,7 +207,7 @@ public class BluetoothSerialPlugin extends Plugin {
 
     @PluginMethod
     public void isConnected(@NonNull PluginCall call) {
-        int bluetoothState = implementation.getState();
+        ConnectionState bluetoothState = implementation.getState();
         JSObject result = new JSObject()
                 .put("isConnected", bluetoothState == ConnectionState.CONNECTED);
         call.resolve(result);

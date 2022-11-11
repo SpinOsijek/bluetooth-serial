@@ -38,7 +38,7 @@ public class BluetoothSerial {
     private final Handler connectionHandler;
     private final Handler writeHandler;
     private final Handler readHandler;
-    private int mState;
+    private ConnectionState mState;
 
     public BluetoothSerial(Handler connectionHandler, Handler writeHandler, Handler readHandler) {
         this.connectionHandler = connectionHandler;
@@ -75,7 +75,7 @@ public class BluetoothSerial {
      *
      * @param state An integer defining the current connection state
      */
-    private synchronized void setState(int state) {
+    private synchronized void setState(ConnectionState state) {
         if (D) Log.d(TAG, "setState() " + mState + " -> " + state);
         mState = state;
         sendStateToPlugin(state);
@@ -84,7 +84,7 @@ public class BluetoothSerial {
     /**
      * Return the current connection state.
      */
-    public synchronized int getState() {
+    public synchronized ConnectionState getState() {
         return mState;
     }
 
@@ -144,7 +144,7 @@ public class BluetoothSerial {
 
     private void sendConnectionErrorToPlugin(String error) {
         Message message = connectionHandler.obtainMessage(ERROR, error);
-        message.arg1 = ConnectionState.NONE;
+        message.arg1 = ConnectionState.NONE.value();
         message.sendToTarget();
     }
 
@@ -166,10 +166,10 @@ public class BluetoothSerial {
         r.write(out);
     }
 
-    private void sendStateToPlugin(int state) {
+    private void sendStateToPlugin(ConnectionState state) {
         Message message = connectionHandler.obtainMessage(SUCCESS);
         Bundle bundle = new Bundle();
-        bundle.putInt("state", state);
+        bundle.putInt("state", state.value());
         message.setData(bundle);
         message.sendToTarget();
     }
@@ -227,7 +227,7 @@ public class BluetoothSerial {
                     "device"
                     );
             Bundle bundle = new Bundle();
-            bundle.putInt("state", ConnectionState.CONNECTED);
+            bundle.putInt("state", ConnectionState.CONNECTED.value());
             bundle.putParcelable("device", device);
             message.setData(bundle);
             message.sendToTarget();
