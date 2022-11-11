@@ -101,7 +101,8 @@ public class BluetoothSerial {
      */
     public synchronized void stop() {
         if (D) Log.d(TAG, "stop");
-        tryCancelAllThreads();
+        tryCancelThread(mConnectThread);
+        tryCancelThread(mConnectedThread);
         setState(ConnectionState.NONE);
     }
 
@@ -136,7 +137,8 @@ public class BluetoothSerial {
     @SuppressLint("MissingPermission")
     public synchronized void startConnectedThread(BluetoothSocket socket, final String socketType) {
         if (D) Log.d(TAG, "connected, Socket Type:" + socketType);
-        tryCancelAllThreads();
+        tryCancelThread(mConnectThread);
+        tryCancelThread(mConnectedThread);
         // Start the thread to manage the connection and perform transmissions
         mConnectedThread = new ConnectedThread(socket, socketType);
         mConnectedThread.start();
@@ -355,9 +357,5 @@ public class BluetoothSerial {
         }
     }
 
-    private void tryCancelAllThreads() {
-        tryCancelThread(mConnectThread);
-        tryCancelThread(mConnectedThread);
-    }
 
 }
