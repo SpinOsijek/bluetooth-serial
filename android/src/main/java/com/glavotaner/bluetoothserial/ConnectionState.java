@@ -1,8 +1,15 @@
 package com.glavotaner.bluetoothserial;
 
-public class ConnectionState {
-    public static final int NONE = 0;
-    public static final int LISTEN = 1;
-    public static final int CONNECTING = 2;
-    public static final int CONNECTED = 3;
+public enum ConnectionState {
+    NONE(0),
+    CONNECTING(1),
+    CONNECTED(2);
+    private final int state;
+    ConnectionState(int state) {
+        this.state = state;
+    }
+
+    public int value() {
+        return state;
+    }
 }

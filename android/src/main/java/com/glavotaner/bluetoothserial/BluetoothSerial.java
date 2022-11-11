@@ -39,7 +39,7 @@ public class BluetoothSerial {
     private final Handler connectionHandler;
     private final Handler writeHandler;
     private final Handler readHandler;
-    private int mState;
+    private ConnectionState mState;
 
     public BluetoothSerial(Handler connectionHandler, Handler writeHandler, Handler readHandler) {
         this.connectionHandler = connectionHandler;
@@ -76,7 +76,7 @@ public class BluetoothSerial {
      *
      * @param state An integer defining the current connection state
      */
-    private synchronized void setState(int state) {
+    private synchronized void setState(ConnectionState state) {
         if (D) Log.d(TAG, "setState() " + mState + " -> " + state);
         mState = state;
         sendStateToPlugin(state);
@@ -85,7 +85,7 @@ public class BluetoothSerial {
     /**
      * Return the current connection state.
      */
-    public synchronized int getState() {
+    public synchronized ConnectionState getState() {
         return mState;
     }
 
@@ -145,7 +145,7 @@ public class BluetoothSerial {
 
     private void sendConnectionErrorToPlugin(String error) {
         Message message = connectionHandler.obtainMessage(ERROR, error);
-        message.arg1 = ConnectionState.NONE;
+        message.arg1 = ConnectionState.NONE.value();
         message.sendToTarget();
     }
 
@@ -167,9 +167,9 @@ public class BluetoothSerial {
         r.write(out);
     }
 
-    private void sendStateToPlugin(int state) {
+    private void sendStateToPlugin(ConnectionState state) {
         Message message = connectionHandler.obtainMessage(SUCCESS);
-        message.arg1 = state;
+        message.arg1 = state.value();
         message.sendToTarget();
     }
 
@@ -221,7 +221,7 @@ public class BluetoothSerial {
         private void sendConnectedDeviceToPlugin() {
             JSObject device = BluetoothSerialPlugin.deviceToJSON(mmDevice);
             Message message = connectionHandler.obtainMessage(SUCCESS, device);
-            message.arg1 = ConnectionState.CONNECTED;
+            message.arg1 = ConnectionState.CONNECTED.value();
             message.sendToTarget();
         }
 
