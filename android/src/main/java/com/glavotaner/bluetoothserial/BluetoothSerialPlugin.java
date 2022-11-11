@@ -339,7 +339,7 @@ public class BluetoothSerialPlugin extends Plugin {
                 .put("address", device.getAddress());
         BluetoothClass btClass = device.getBluetoothClass();
         if (btClass != null) {
-            json.put("class", btClass.getDeviceClass());
+            json.put("deviceClass", btClass.getDeviceClass());
         }
         return json;
     }

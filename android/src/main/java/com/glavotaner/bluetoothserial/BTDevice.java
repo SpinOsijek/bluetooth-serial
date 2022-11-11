@@ -1,5 +1,6 @@
 package com.glavotaner.bluetoothserial;
 
+import android.os.Bundle;
 import android.os.Parcel;
 import android.os.Parcelable;
 
@@ -9,25 +10,28 @@ public class BTDevice implements Parcelable {
 
     private final String address;
     private final String name;
-    private final String className;
+    private final int deviceClass;
 
-    BTDevice(String address, String name, String className) {
+    BTDevice(String address, String name, int deviceClass) {
         this.address = address;
         this.name = name;
-        this.className = className;
+        this.deviceClass = deviceClass;
     }
 
     BTDevice(Parcel in) {
-        String[] data = new String[3];
-        in.readStringArray(data);
-        this.address = data[0];
-        this.name = data[1];
-        this.className = data[2];
+        Bundle bundle = in.readBundle(getClass().getClassLoader());
+        this.address = bundle.getString("address");
+        this.name = bundle.getString("name");
+        this.deviceClass = bundle.getInt("deviceClass");
     }
 
     @Override
     public void writeToParcel(Parcel parcel, int i) {
-        parcel.writeStringArray(new String[] {this.address, this.name, this.className});
+        Bundle bundle = new Bundle();
+        bundle.putString("address", address);
+        bundle.putString("name", name);
+        bundle.putInt("deviceClass", deviceClass);
+        parcel.writeBundle(bundle);
     }
 
     public static final Parcelable.Creator<BTDevice> CREATOR = new Parcelable.Creator<>() {
@@ -48,7 +52,9 @@ public class BTDevice implements Parcelable {
     }
 
     public JSObject toJSObject() {
-        return new JSObject().put("address", address).put("name", name).put("class", className);
+        return new JSObject().put("address", address)
+                .put("name", name)
+                .put("deviceClass", deviceClass);
     }
 
 }

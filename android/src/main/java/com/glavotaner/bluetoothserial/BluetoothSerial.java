@@ -5,6 +5,7 @@ import static com.glavotaner.bluetoothserial.Message.SUCCESS;
 
 import android.annotation.SuppressLint;
 import android.bluetooth.BluetoothAdapter;
+import android.bluetooth.BluetoothClass;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothSocket;
 import android.os.Bundle;
@@ -213,12 +214,15 @@ public class BluetoothSerial {
             sendConnectedDeviceToPlugin();
         }
 
+        @SuppressLint("MissingPermission")
         private void sendConnectedDeviceToPlugin() {
             Message message = connectionHandler.obtainMessage(SUCCESS);
-            @SuppressLint("MissingPermission") BTDevice device = new BTDevice(
+            BluetoothClass btClass = mmDevice.getBluetoothClass();
+            BTDevice device = new BTDevice(
                     mmDevice.getAddress(),
                     mmDevice.getName(),
-                    "device"
+                    // TODO class
+                    btClass != null ? btClass.getDeviceClass() : 0
                     );
             Bundle bundle = new Bundle();
             bundle.putInt("state", ConnectionState.CONNECTED.value());
