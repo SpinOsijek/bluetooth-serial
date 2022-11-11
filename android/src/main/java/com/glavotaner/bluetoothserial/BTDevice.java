@@ -20,9 +20,9 @@ public class BTDevice implements Parcelable {
 
     BTDevice(Parcel in) {
         Bundle bundle = in.readBundle(getClass().getClassLoader());
-        this.address = bundle.getString("address");
-        this.name = bundle.getString("name");
-        this.deviceClass = bundle.getInt("deviceClass");
+        address = bundle.getString("address");
+        name = bundle.getString("name");
+        deviceClass = bundle.getInt("deviceClass");
     }
 
     @Override
