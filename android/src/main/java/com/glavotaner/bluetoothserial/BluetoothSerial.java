@@ -113,9 +113,8 @@ public class BluetoothSerial {
      * Start the ConnectThread to initiate a connection to a remote device.
      *
      * @param device The BluetoothDevice to connect
-     * @param secure Socket Security type - Secure (true) , Insecure (false)
      */
-    public synchronized void connect(BluetoothDevice device, boolean secure) {
+    public synchronized void connect(BluetoothDevice device) {
         if (D) Log.d(TAG, "connect to: " + device);
         // Cancel any thread attempting to make a connection
         if (mState == ConnectionState.CONNECTING) {
@@ -124,7 +123,7 @@ public class BluetoothSerial {
         // Cancel any thread currently running a connection
         tryCancelThread(mConnectedThread);
         // Start the thread to connect with the given device
-        mConnectThread = new ConnectThread(device, secure);
+        mConnectThread = new ConnectThread(device);
         mConnectThread.start();
         setState(ConnectionState.CONNECTING);
     }
@@ -181,24 +180,19 @@ public class BluetoothSerial {
     private class ConnectThread extends Thread implements CancellableThread {
         private final BluetoothSocket mmSocket;
         private final BluetoothDevice mmDevice;
-        private final String mSocketType;
+        private final String mSocketType = "insecure";
 
-        public ConnectThread(BluetoothDevice device, boolean secure) {
+        public ConnectThread(BluetoothDevice device) {
             mmDevice = device;
-            mSocketType = secure ? "Secure" : "Insecure";
             // Get a BluetoothSocket for a connection with the given BluetoothDevice
-            mmSocket = getSocket(device, secure);
+            mmSocket = getSocket(device);
         }
 
         @SuppressLint("MissingPermission")
-        private BluetoothSocket getSocket(BluetoothDevice device, boolean secure) {
+        private BluetoothSocket getSocket(BluetoothDevice device) {
             BluetoothSocket socket = null;
             try {
-                if (secure) {
-                    socket = device.createRfcommSocketToServiceRecord(UUID_SPP);
-                } else {
-                    socket = device.createInsecureRfcommSocketToServiceRecord(UUID_SPP);
-                }
+                socket = device.createInsecureRfcommSocketToServiceRecord(UUID_SPP);
             } catch (IOException e) {
                 Log.e(TAG, "Socket Type: " + mSocketType + "create() failed", e);
             }
