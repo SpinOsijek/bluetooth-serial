@@ -131,9 +131,10 @@ public class BluetoothSerial {
     }
 
     private void sendConnectionErrorToPlugin(String error) {
-        Message message = connectionHandler.obtainMessage(ERROR, error);
-        message.arg1 = ConnectionState.NONE.value();
-        message.sendToTarget();
+        Bundle bundle = new Bundle();
+        bundle.putInt("state", ConnectionState.NONE.value());
+        bundle.putString("error", error);
+        sendConnectionStateToPlugin(ERROR, bundle);
     }
 
     /**
@@ -155,9 +156,13 @@ public class BluetoothSerial {
     }
 
     private void sendStateToPlugin(ConnectionState state) {
-        Message message = connectionHandler.obtainMessage(SUCCESS);
         Bundle bundle = new Bundle();
         bundle.putInt("state", state.value());
+        sendConnectionStateToPlugin(SUCCESS, bundle);
+    }
+
+    private void sendConnectionStateToPlugin(int status, Bundle bundle) {
+        Message message = connectionHandler.obtainMessage(status);
         message.setData(bundle);
         message.sendToTarget();
     }
