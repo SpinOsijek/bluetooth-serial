@@ -96,10 +96,6 @@ public class BluetoothSerial {
         setState(ConnectionState.NONE);
     }
 
-    private void startService() {
-        BluetoothSerial.this.resetService();
-    }
-
     /**
      * Start the ConnectThread to initiate a connection to a remote device.
      *
@@ -233,7 +229,7 @@ public class BluetoothSerial {
             } catch (IOException e) {
                 Log.e(TAG, e.toString());
                 sendConnectionErrorToPlugin("Unable to connect to device");
-                startService();
+                BluetoothSerial.this.resetService();
             }
         }
 
@@ -291,7 +287,7 @@ public class BluetoothSerial {
                 } catch (IOException e) {
                     Log.e(TAG, "disconnected", e);
                     sendConnectionErrorToPlugin("Device connection was lost");
-                    startService();
+                    BluetoothSerial.this.resetService();
                     break;
                 }
             }
