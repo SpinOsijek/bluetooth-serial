@@ -174,7 +174,7 @@ public class BluetoothSerialPlugin extends Plugin {
 
     @PluginMethod
     public void disconnect(@NonNull PluginCall call) {
-        implementation.stop();
+        implementation.resetService();
         call.resolve();
     }
 
@@ -348,7 +348,7 @@ public class BluetoothSerialPlugin extends Plugin {
     protected void handleOnDestroy() {
         super.handleOnDestroy();
         if (implementation != null) {
-            implementation.stop();
+            implementation.resetService();
         }
     }
 

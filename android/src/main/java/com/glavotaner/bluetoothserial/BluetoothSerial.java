@@ -96,16 +96,6 @@ public class BluetoothSerial {
         setState(ConnectionState.NONE);
     }
 
-    /**
-     * Stop all threads
-     */
-    public synchronized void stop() {
-        if (D) Log.d(TAG, "stop");
-        tryCancelThread(mConnectThread);
-        tryCancelThread(mIOThread);
-        setState(ConnectionState.NONE);
-    }
-
     private void startService() {
         BluetoothSerial.this.resetService();
     }
