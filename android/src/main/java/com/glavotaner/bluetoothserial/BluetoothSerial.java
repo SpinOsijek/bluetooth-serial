@@ -35,7 +35,7 @@ public class BluetoothSerial {
     // Member fields
     private final BluetoothAdapter mAdapter;
     private ConnectThread mConnectThread;
-    private ConnectedThread mConnectedThread;
+    private IOThread mIOThread;
     private final Handler connectionHandler;
     private final Handler writeHandler;
     private final Handler readHandler;
@@ -92,7 +92,7 @@ public class BluetoothSerial {
     public synchronized void resetService() {
         if (D) Log.d(TAG, "start");
         tryCancelThread(mConnectThread);
-        tryCancelThread(mConnectedThread);
+        tryCancelThread(mIOThread);
         setState(ConnectionState.NONE);
     }
 
@@ -102,7 +102,7 @@ public class BluetoothSerial {
     public synchronized void stop() {
         if (D) Log.d(TAG, "stop");
         tryCancelThread(mConnectThread);
-        tryCancelThread(mConnectedThread);
+        tryCancelThread(mIOThread);
         setState(ConnectionState.NONE);
     }
 
@@ -122,7 +122,7 @@ public class BluetoothSerial {
             tryCancelThread(mConnectThread);
         }
         // Cancel any thread currently running a connection
-        tryCancelThread(mConnectedThread);
+        tryCancelThread(mIOThread);
         // Start the thread to connect with the given device
         mConnectThread = new ConnectThread(device);
         mConnectThread.start();
@@ -135,13 +135,13 @@ public class BluetoothSerial {
      * @param socket The BluetoothSocket on which the connection was made
      */
     @SuppressLint("MissingPermission")
-    public synchronized void startConnectedThread(BluetoothSocket socket, final String socketType) {
+    public synchronized void startIOThread(BluetoothSocket socket, final String socketType) {
         if (D) Log.d(TAG, "connected, Socket Type:" + socketType);
         tryCancelThread(mConnectThread);
-        tryCancelThread(mConnectedThread);
+        tryCancelThread(mIOThread);
         // Start the thread to manage the connection and perform transmissions
-        mConnectedThread = new ConnectedThread(socket, socketType);
-        mConnectedThread.start();
+        mIOThread = new IOThread(socket, socketType);
+        mIOThread.start();
     }
 
     private void sendConnectionErrorToPlugin(String error) {
@@ -154,15 +154,15 @@ public class BluetoothSerial {
      * Write to the ConnectedThread in an unsynchronized manner
      *
      * @param out The bytes to write
-     * @see ConnectedThread#write(byte[])
+     * @see IOThread#write(byte[])
      */
     public void write(byte[] out) {
         // Create temporary object
-        ConnectedThread r;
+        IOThread r;
         // Synchronize a copy of the ConnectedThread
         synchronized (this) {
             if (mState != ConnectionState.CONNECTED) return;
-            r = mConnectedThread;
+            r = mIOThread;
         }
         // Perform the write unsynchronized
         r.write(out);
@@ -212,7 +212,7 @@ public class BluetoothSerial {
             connectToSocket();
             // Reset the ConnectThread because we're done
             resetConnectThread();
-            startConnectedThread(mmSocket, mSocketType);
+            startIOThread(mmSocket, mSocketType);
             sendConnectedDeviceToPlugin();
         }
 
@@ -266,12 +266,12 @@ public class BluetoothSerial {
      * This thread runs during a connection with a remote device.
      * It handles all incoming and outgoing transmissions.
      */
-    private class ConnectedThread extends Thread implements CancellableThread {
+    private class IOThread extends Thread implements CancellableThread {
         private final BluetoothSocket mmSocket;
         private final InputStream mmInStream;
         private final OutputStream mmOutStream;
 
-        public ConnectedThread(BluetoothSocket socket, String socketType) {
+        public IOThread(BluetoothSocket socket, String socketType) {
             Log.d(TAG, "create ConnectedThread: " + socketType);
             mmSocket = socket;
             InputStream tmpIn = null;
