@@ -63,7 +63,7 @@ public class BluetoothSerialPlugin extends Plugin {
     @Override
     public void load() {
         super.load();
-        Looper looper = Looper.myLooper();
+        Looper looper = Looper.getMainLooper();
         Handler connectionHandler = new Handler(looper, message -> {
             Bundle data = message.getData();
             ConnectionState connectionState = ConnectionState.values()[data.getInt("state")];
