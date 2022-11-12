@@ -52,7 +52,8 @@ public class BTDevice implements Parcelable {
     }
 
     public JSObject toJSObject() {
-        return new JSObject().put("address", address)
+        return new JSObject()
+                .put("address", address)
                 .put("name", name)
                 .put("deviceClass", deviceClass);
     }
