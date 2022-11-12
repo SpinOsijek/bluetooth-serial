@@ -15,8 +15,6 @@ import android.util.Log;
 
 import androidx.annotation.NonNull;
 
-import com.glavotaner.bluetoothserial.threads.CancellableThread;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;

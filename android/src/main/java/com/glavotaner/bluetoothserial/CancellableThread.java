@@ -1,4 +1,4 @@
-package com.glavotaner.bluetoothserial.threads;
+package com.glavotaner.bluetoothserial;
 
 public interface CancellableThread {
     void cancel();
