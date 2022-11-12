@@ -167,6 +167,7 @@ public class BluetoothSerial {
      * with a device. It runs straight through; the connection either
      * succeeds or fails.
      */
+    @SuppressLint("MissingPermission")
     private class ConnectThread extends Thread implements CancellableThread {
         private final BluetoothSocket mmSocket;
         private final BluetoothDevice mmDevice;
@@ -178,7 +179,6 @@ public class BluetoothSerial {
             mmSocket = getSocket(device);
         }
 
-        @SuppressLint("MissingPermission")
         private BluetoothSocket getSocket(BluetoothDevice device) {
             BluetoothSocket socket = null;
             try {
@@ -189,7 +189,6 @@ public class BluetoothSerial {
             return socket;
         }
 
-        @SuppressLint("MissingPermission")
         public void run() {
             Log.i(TAG, "BEGIN mConnectThread SocketType:" + mSocketType);
             setName("ConnectThread" + mSocketType);
@@ -202,7 +201,6 @@ public class BluetoothSerial {
             sendConnectedDeviceToPlugin();
         }
 
-        @SuppressLint("MissingPermission")
         private void sendConnectedDeviceToPlugin() {
             Message message = connectionHandler.obtainMessage(SUCCESS);
             BluetoothClass btClass = mmDevice.getBluetoothClass();
@@ -219,7 +217,6 @@ public class BluetoothSerial {
             message.sendToTarget();
         }
 
-        @SuppressLint("MissingPermission")
         private void connectToSocket() {
             try {
                 // This is a blocking call and will only return on a successful connection or an exception
