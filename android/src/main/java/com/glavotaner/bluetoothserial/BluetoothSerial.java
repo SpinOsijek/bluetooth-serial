@@ -89,8 +89,14 @@ public class BluetoothSerial {
 
     public synchronized void resetService() {
         if (D) Log.d(TAG, "start");
-        tryCancelThread(mConnectThread);
-        tryCancelThread(mIOThread);
+        if (mConnectThread != null) {
+            mConnectThread.cancel();
+            mConnectThread = null;
+        }
+        if (mIOThread != null) {
+            mIOThread.cancel();
+            mIOThread = null;
+        }
         setState(ConnectionState.NONE);
     }
 
@@ -102,11 +108,15 @@ public class BluetoothSerial {
     public synchronized void connect(BluetoothDevice device) {
         if (D) Log.d(TAG, "connect to: " + device);
         // Cancel any thread attempting to make a connection
-        if (mState == ConnectionState.CONNECTING) {
-            tryCancelThread(mConnectThread);
+        if (mState == ConnectionState.CONNECTING && mConnectThread != null) {
+            mConnectThread.cancel();
+            mConnectThread = null;
         }
         // Cancel any thread currently running a connection
-        tryCancelThread(mIOThread);
+        if (mIOThread != null) {
+            mIOThread.cancel();
+            mIOThread = null;
+        }
         // Start the thread to connect with the given device
         mConnectThread = new ConnectThread(device);
         mConnectThread.start();
@@ -121,8 +131,14 @@ public class BluetoothSerial {
     @SuppressLint("MissingPermission")
     public synchronized void startIOThread(BluetoothSocket socket, final String socketType) {
         if (D) Log.d(TAG, "connected, Socket Type:" + socketType);
-        tryCancelThread(mConnectThread);
-        tryCancelThread(mIOThread);
+        if (mConnectThread != null) {
+            mConnectThread.cancel();
+            mConnectThread = null;
+        }
+        if (mIOThread != null) {
+            mIOThread.cancel();
+            mIOThread = null;
+        }
         // Start the thread to manage the connection and perform transmissions
         mIOThread = new IOThread(socket, socketType);
         mIOThread.start();
@@ -335,13 +351,5 @@ public class BluetoothSerial {
         message.setData(bundle);
         message.sendToTarget();
     }
-
-    private void tryCancelThread(CancellableThread thread) {
-        if (thread != null) {
-            thread.cancel();
-            thread = null;
-        }
-    }
-
 
 }
