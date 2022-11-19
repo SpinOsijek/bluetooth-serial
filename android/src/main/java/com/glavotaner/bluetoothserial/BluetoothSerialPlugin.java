@@ -69,12 +69,6 @@ public class BluetoothSerialPlugin extends Plugin {
             ConnectionState connectionState = ConnectionState.values()[data.getInt("state")];
             if (connectCall == null) return false;
             switch (message.what) {
-                case ERROR: {
-                    String error = data.getString("error");
-                    connectCall.reject(error);
-                    connectCall.setKeepAlive(false);
-                    connectCall = null;
-                }
                 case SUCCESS: {
                     JSObject state = new JSObject().put("state", connectionState.value());
                     connectCall.resolve(state);
@@ -83,16 +77,20 @@ public class BluetoothSerialPlugin extends Plugin {
                         connectCall = null;
                     }
                 }
+                case ERROR: {
+                    String error = data.getString("error");
+                    connectCall.reject(error);
+                    connectCall.setKeepAlive(false);
+                    connectCall = null;
+                }
             }
             return false;
         });
         Handler writeHandler = new Handler(looper, message -> {
             if (writeCall == null) return false;
-            if (message.what == SUCCESS) {
-                writeCall.resolve();
-            } else {
-                String error = message.getData().getString("error");
-                writeCall.reject(error);
+            switch (message.what) {
+                case SUCCESS: writeCall.resolve();
+                case ERROR: writeCall.reject(message.getData().getString("error"));
             }
             writeCall = null;
            return false;
