@@ -67,24 +67,30 @@ public class BluetoothSerialPlugin extends Plugin {
         Handler connectionHandler = new Handler(looper, message -> {
             Bundle data = message.getData();
             ConnectionState connectionState = ConnectionState.values()[data.getInt("state")];
-            if (connectionState == ConnectionState.CONNECTED && connectCall != null) {
-                BTDevice device = data.getParcelable("device");
-                connectCall.resolve(new JSObject().put("device", device.toJSObject()));
-                connectCall = null;
+            if (connectCall == null) return false;
+            switch (message.what) {
+                case ERROR: {
+                    String error = data.getString("error");
+                    connectCall.reject(error);
+                    connectCall.setKeepAlive(false);
+                    connectCall = null;
+                }
+                case SUCCESS: {
+                    JSObject state = new JSObject().put("state", connectionState.value());
+                    connectCall.resolve(state);
+                    if (connectionState == ConnectionState.NONE) {
+                        connectCall.setKeepAlive(false);
+                        connectCall = null;
+                    }
+                }
             }
-            if (message.what == ERROR && connectCall != null) {
-                String error = data.getString("error");
-                connectCall.reject(error);
-                connectCall = null;
-            }
-            JSObject result = new JSObject().put("state", connectionState.value());
-            notifyListeners("connectionChange", result);
             return false;
         });
         Handler writeHandler = new Handler(looper, message -> {
-            if (message.what == SUCCESS && writeCall != null) {
+            if (writeCall == null) return false;
+            if (message.what == SUCCESS) {
                 writeCall.resolve();
-            } else if (writeCall != null) {
+            } else {
                 String error = message.getData().getString("error");
                 writeCall.reject(error);
             }
@@ -155,6 +161,7 @@ public class BluetoothSerialPlugin extends Plugin {
         String macAddress = call.getString("address");
         BluetoothDevice device = implementation.getRemoteDevice(macAddress);
         if (device != null) {
+            call.setKeepAlive(true);
             connectCall = call;
             implementation.connect(device);
             buffer.setLength(0);

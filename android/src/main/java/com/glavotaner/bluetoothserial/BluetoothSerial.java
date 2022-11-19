@@ -5,7 +5,6 @@ import static com.glavotaner.bluetoothserial.Message.SUCCESS;
 
 import android.annotation.SuppressLint;
 import android.bluetooth.BluetoothAdapter;
-import android.bluetooth.BluetoothClass;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothSocket;
 import android.os.Bundle;
@@ -188,12 +187,9 @@ public class BluetoothSerial {
     @SuppressLint("MissingPermission")
     private class ConnectThread extends Thread {
         private final BluetoothSocket mmSocket;
-        private final BluetoothDevice mmDevice;
         private final String mSocketType = "insecure";
 
         public ConnectThread(BluetoothDevice device) {
-            mmDevice = device;
-            // Get a BluetoothSocket for a connection with the given BluetoothDevice
             mmSocket = getSocket(device);
         }
 
@@ -216,23 +212,7 @@ public class BluetoothSerial {
             // Reset the ConnectThread because we're done
             resetConnectThread();
             startIOThread(mmSocket, mSocketType);
-            sendConnectedDeviceToPlugin();
-        }
-
-        private void sendConnectedDeviceToPlugin() {
-            Message message = connectionHandler.obtainMessage(SUCCESS);
-            BluetoothClass btClass = mmDevice.getBluetoothClass();
-            BTDevice device = new BTDevice(
-                    mmDevice.getAddress(),
-                    mmDevice.getName(),
-                    // TODO class
-                    btClass != null ? btClass.getDeviceClass() : 0
-                    );
-            Bundle bundle = new Bundle();
-            bundle.putInt("state", ConnectionState.CONNECTED.value());
-            bundle.putParcelable("device", device);
-            message.setData(bundle);
-            message.sendToTarget();
+            sendStateToPlugin(ConnectionState.CONNECTED);
         }
 
         private void connectToSocket() {

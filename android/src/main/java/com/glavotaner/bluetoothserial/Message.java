@@ -1,6 +1,6 @@
 package com.glavotaner.bluetoothserial;
 
 public class Message {
-    public static int SUCCESS = 0;
-    public static int ERROR = -1;
+    public static final int SUCCESS = 0;
+    public static final int ERROR = -1;
 }
