@@ -161,7 +161,6 @@ public class BluetoothSerialPlugin extends Plugin {
         String macAddress = call.getString("address");
         BluetoothDevice device = implementation.getRemoteDevice(macAddress);
         if (device != null) {
-            call.setKeepAlive(true);
             connectCall = call;
             implementation.connect(device);
             buffer.setLength(0);
