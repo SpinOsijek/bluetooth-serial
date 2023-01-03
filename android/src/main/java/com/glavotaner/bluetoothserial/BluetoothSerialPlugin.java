@@ -57,6 +57,8 @@ public class BluetoothSerialPlugin extends Plugin {
     private BluetoothSerial implementation;
     private PluginCall connectCall;
     private PluginCall writeCall;
+    private PluginCall discoveryCall;
+    private BroadcastReceiver discoveryReceiver;
 
     StringBuffer buffer = new StringBuffer();
 
@@ -120,6 +122,7 @@ public class BluetoothSerialPlugin extends Plugin {
         try {
             for (Object permission: queriedPermissions.toList()) {
                 String alias = (String) permission;
+                Log.d(TAG, "Checking " + alias);
                 permissionResults.put(alias, checkCompatPermission(alias));
             }
         } catch(JSONException e) {
@@ -306,7 +309,12 @@ public class BluetoothSerialPlugin extends Plugin {
 
     @SuppressLint("MissingPermission")
     private void startDiscovery(PluginCall call) {
-        final BroadcastReceiver discoverReceiver = new BroadcastReceiver() {
+        if (discoveryReceiver != null) {
+            discoveryCall.reject("Discovery cancelled");
+            implementation.cancelDiscovery();
+            getActivity().unregisterReceiver(discoveryReceiver);
+        }
+        discoveryReceiver = new BroadcastReceiver() {
 
             private final JSONArray unpairedDevices = new JSONArray();
             private final JSObject result = new JSObject().put("devices", unpairedDevices);
@@ -319,15 +327,19 @@ public class BluetoothSerialPlugin extends Plugin {
                     result.put("devices", unpairedDevices);
                     notifyListeners("discoverUnpaired", result);
                 } else if (BluetoothAdapter.ACTION_DISCOVERY_FINISHED.equals(action)) {
-                    call.resolve(result);
+                    discoveryCall.resolve(result);
                     getActivity().unregisterReceiver(this);
+                    discoveryReceiver = null;
+                    discoveryCall = null;
                 }
             }
 
         };
-        Activity activity = getActivity();
-        activity.registerReceiver(discoverReceiver, new IntentFilter(BluetoothDevice.ACTION_FOUND));
-        activity.registerReceiver(discoverReceiver, new IntentFilter(BluetoothAdapter.ACTION_DISCOVERY_FINISHED));
+        IntentFilter filter = new IntentFilter();
+        filter.addAction(BluetoothDevice.ACTION_FOUND);
+        filter.addAction(BluetoothAdapter.ACTION_DISCOVERY_FINISHED);
+        getActivity().registerReceiver(discoveryReceiver, filter);
+        discoveryCall = call;
         implementation.startDiscovery();
     }
 

@@ -68,6 +68,10 @@ public class BluetoothSerial {
         mAdapter.startDiscovery();
     }
 
+    public void cancelDiscovery() {
+        mAdapter.cancelDiscovery();
+    }
+
     /**
      * Set the current state of the chat connection
      *
@@ -207,7 +211,7 @@ public class BluetoothSerial {
             Log.i(TAG, "BEGIN mConnectThread SocketType:" + mSocketType);
             setName("ConnectThread" + mSocketType);
             // Always cancel discovery because it will slow down a connection
-            mAdapter.cancelDiscovery();
+            cancelDiscovery();
             connectToSocket();
             // Reset the ConnectThread because we're done
             resetConnectThread();
