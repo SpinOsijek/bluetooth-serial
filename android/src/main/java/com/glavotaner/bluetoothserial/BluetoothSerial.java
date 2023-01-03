@@ -300,17 +300,17 @@ public class BluetoothSerial {
          * @param buffer The bytes to write
          */
         public void write(byte[] buffer) {
-            Message message = writeHandler.obtainMessage(ERROR);
+            Message message = writeHandler.obtainMessage(SUCCESS);
             try {
                 mmOutStream.write(buffer);
-                // Share the sent message back to the UI Activity
-                message.what = SUCCESS;
             } catch (IOException e) {
+                message.what = ERROR;
                 Log.e(TAG, "Exception during write", e);
                 Bundle bundle = new Bundle();
                 bundle.putString("error", e.getMessage());
                 message.setData(bundle);
             }
+            // Share the sent message back to the UI Activity
             message.sendToTarget();
         }
 
