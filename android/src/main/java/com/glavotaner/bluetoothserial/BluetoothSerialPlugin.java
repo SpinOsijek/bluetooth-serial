@@ -72,16 +72,12 @@ public class BluetoothSerialPlugin extends Plugin {
                 case ERROR: {
                     String error = data.getString("error");
                     connectCall.reject(error);
-                    connectCall.setKeepAlive(false);
                     connectCall = null;
                 }
                 case SUCCESS: {
                     JSObject state = new JSObject().put("state", connectionState.value());
                     connectCall.resolve(state);
-                    if (connectionState == ConnectionState.NONE) {
-                        connectCall.setKeepAlive(false);
-                        connectCall = null;
-                    }
+                    if (connectionState == ConnectionState.NONE) connectCall = null;
                 }
             }
             return false;
@@ -133,12 +129,8 @@ public class BluetoothSerialPlugin extends Plugin {
     }
 
     private PermissionState checkCompatPermission(@NonNull String permissionAlias) {
-        PermissionState permissionState = PermissionState.GRANTED;
         // CONNECT and SCAN are granted as they are not supported by this version of Android
-        if (permissionAlias.equals(LOCATION)) {
-            permissionState = getPermissionState(permissionAlias);
-        }
-        return permissionState;
+        return parmissionAlias.equals(LOCATION) ? getPermissionState(permissionAlias) : PermissionState.GRANTED;
     }
 
     @PluginMethod
@@ -235,6 +227,7 @@ public class BluetoothSerialPlugin extends Plugin {
 
     @PluginMethod
     public void enable(PluginCall call) {
+        // TODO connect permission is required
         if (getPermissionState(LOCATION) == PermissionState.GRANTED) {
             enableBluetooth(call);
         } else {
