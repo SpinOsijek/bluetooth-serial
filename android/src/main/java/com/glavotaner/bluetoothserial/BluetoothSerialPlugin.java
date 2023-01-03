@@ -329,8 +329,8 @@ public class BluetoothSerialPlugin extends Plugin {
                 } else if (BluetoothAdapter.ACTION_DISCOVERY_FINISHED.equals(action)) {
                     discoveryCall.resolve(result);
                     getActivity().unregisterReceiver(this);
-                    discoveryReceiver = null;
                     discoveryCall = null;
+                    discoveryReceiver = null;
                 }
             }
 
