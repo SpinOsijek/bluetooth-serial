@@ -133,7 +133,7 @@ public class BluetoothSerialPlugin extends Plugin {
 
     private PermissionState checkCompatPermission(@NonNull String permissionAlias) {
         // CONNECT and SCAN are granted as they are not supported by this version of Android
-        return parmissionAlias.equals(LOCATION) ? getPermissionState(permissionAlias) : PermissionState.GRANTED;
+        return permissionAlias.equals(LOCATION) ? getPermissionState(permissionAlias) : PermissionState.GRANTED;
     }
 
     @PluginMethod
