@@ -264,6 +264,21 @@ public class BluetoothSerialPlugin extends Plugin {
         }
     }
 
+    @PluginMethod
+    public void cancelDiscovery(PluginCall call) {
+        cancelDiscovery();
+        call.resolve();
+    }
+
+    private void cancelDiscovery() {
+        if (discoveryReceiver != null) {
+            discoveryCall.reject("Discovery cancelled");
+            implementation.cancelDiscovery();
+            getActivity().unregisterReceiver(discoveryReceiver);
+            discoveryReceiver = null;
+        }
+    }
+
     @PermissionCallback
     private void discoverPermsCallback(PluginCall call) {
         if (getPermissionState(SCAN) == PermissionState.GRANTED) {
@@ -275,11 +290,7 @@ public class BluetoothSerialPlugin extends Plugin {
 
     @SuppressLint("MissingPermission")
     private void startDiscovery(PluginCall call) {
-        if (discoveryReceiver != null) {
-            discoveryCall.reject("Discovery cancelled");
-            implementation.cancelDiscovery();
-            getActivity().unregisterReceiver(discoveryReceiver);
-        }
+        cancelDiscovery();
         discoveryReceiver = new BroadcastReceiver() {
 
             private final JSONArray unpairedDevices = new JSONArray();

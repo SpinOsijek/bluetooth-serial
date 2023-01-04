@@ -14,6 +14,7 @@ export interface BluetoothSerialPlugin {
   settings(): Promise<void>;
   list(): Promise<devices>;
   discoverUnpaired(): Promise<devices>;
+  cancelDiscovery(): Promise<void>;
   checkPermissions(): Promise<PermissionStatus[]>;
   requestPermissions(options: { permissions: permissions[] }): Promise<PermissionStatus[]>;
   addListener(event: 'discoverUnpaired', listenerFunc: (event: devices) => any): Promise<PluginListenerHandle> & PluginListenerHandle;
