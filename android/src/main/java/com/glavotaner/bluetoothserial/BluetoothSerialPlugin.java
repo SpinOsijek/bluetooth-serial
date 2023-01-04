@@ -69,23 +69,18 @@ public class BluetoothSerialPlugin extends Plugin {
         Handler connectionHandler = new Handler(looper, message -> {
             Bundle data = message.getData();
             ConnectionState connectionState = ConnectionState.values()[data.getInt("state")];
-            switch (message.what) {
-                case ERROR: {
-                    String error = data.getString("error");
-                    if (connectCall != null) {
-                        connectCall.reject(error);
-                        connectCall = null;
-                    }
+            if (message.what == SUCCESS) {
+                notifyListeners("connectionChange", new JSObject().put("state", connectionState.value()));
+                if (connectCall != null && connectionState == ConnectionState.CONNECTED) {
+                    connectCall.resolve(state);
+                    connectCall = null;
                 }
-                case SUCCESS: {
-                    JSObject state = new JSObject().put("state", connectionState.value());
-                    notifyListeners("connectionChange", connectionState.value());
-                    if (connectCall != null && connectionState == ConnectionState.CONNECTED) {
-                        connectCall.resolve(state);
-                        connectCall = null;
-                    }
-                    if (connectionState == ConnectionState.NONE) connectCall = null;
-                }
+                if (connectionState == ConnectionState.NONE) connectCall = null;
+            }
+            else if (connectCall != null) {
+                String error = data.getString("error");
+                connectCall.reject(error);
+                connectCall = null;
             }
             return false;
         });
