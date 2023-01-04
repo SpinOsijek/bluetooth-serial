@@ -272,7 +272,7 @@ public class BluetoothSerialPlugin extends Plugin {
 
     private void cancelDiscovery() {
         if (discoveryReceiver != null) {
-            discoveryCall.reject("Discovery cancelled");
+            if (discoveryCall != null) discoveryCall.reject("Discovery cancelled");
             implementation.cancelDiscovery();
             getActivity().unregisterReceiver(discoveryReceiver);
             discoveryReceiver = null;
