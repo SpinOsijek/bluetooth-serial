@@ -61,16 +61,20 @@ public class BluetoothSerial {
         return mAdapter.isEnabled();
     }
 
+    // connect
     @SuppressLint("MissingPermission")
     public Set<BluetoothDevice> getBondedDevices() {
         return mAdapter.getBondedDevices();
     }
 
+    // scan
     @SuppressLint("MissingPermission")
     public void startDiscovery() {
         mAdapter.startDiscovery();
     }
 
+    // scan
+    @SuppressLint("MissingPermission")
     public void cancelDiscovery() {
         mAdapter.cancelDiscovery();
     }
@@ -133,7 +137,6 @@ public class BluetoothSerial {
      *
      * @param socket The BluetoothSocket on which the connection was made
      */
-    @SuppressLint("MissingPermission")
     public synchronized void startIOThread(BluetoothSocket socket, final String socketType) {
         if (D) Log.d(TAG, "connected, Socket Type:" + socketType);
         if (mConnectThread != null) {
@@ -198,7 +201,6 @@ public class BluetoothSerial {
      * with a device. It runs straight through; the connection either
      * succeeds or fails.
      */
-    @SuppressLint("MissingPermission")
     private class ConnectThread extends Thread {
         private final BluetoothSocket mmSocket;
         private final String mSocketType = "insecure";
@@ -207,31 +209,40 @@ public class BluetoothSerial {
             mmSocket = getSocket(device);
         }
 
+        // connect
+        @SuppressLint("MissingPermission")
         private BluetoothSocket getSocket(BluetoothDevice device) {
             BluetoothSocket socket = null;
             try {
                 socket = device.createInsecureRfcommSocketToServiceRecord(UUID_SPP);
             } catch (IOException e) {
                 Log.e(TAG, "Socket Type: " + mSocketType + "create() failed", e);
+                sendConnectionErrorToPlugin("Could not connect");
             }
             return socket;
         }
 
         public void run() {
-            Log.i(TAG, "BEGIN mConnectThread SocketType:" + mSocketType);
-            setName("ConnectThread" + mSocketType);
-            // Always cancel discovery because it will slow down a connection
-            cancelDiscovery();
-            connectToSocket();
-            // Reset the ConnectThread because we're done
-            resetConnectThread();
-            startIOThread(mmSocket, mSocketType);
+            // could not connect
+            if (mmSocket == null) {
+                resetConnectThread();
+                setState(ConnectionState.NONE);
+            } else {
+                Log.i(TAG, "BEGIN mConnectThread SocketType:" + mSocketType);
+                setName("ConnectThread" + mSocketType);
+                // Always cancel discovery because it will slow down a connection
+                cancelDiscovery();
+                connectToSocket();
+                // Reset the ConnectThread because we're done
+                resetConnectThread();
+                startIOThread(mmSocket, mSocketType);
+            }
         }
 
+        // connect
+        @SuppressLint("MissingPermission")
         private void connectToSocket() {
             try {
-                // This is a blocking call and will only return on a successful connection or an exception
-                Log.i(TAG, "Connecting to socket...");
                 mmSocket.connect();
                 Log.i(TAG, "Connected");
             } catch (IOException e) {
