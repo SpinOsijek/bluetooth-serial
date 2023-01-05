@@ -18,13 +18,13 @@ export class BluetoothSerialWeb
   write(_options: { data: string; }): Promise<void> {
     throw new Error('Method not implemented.');
   }
-  available(): Promise<boolean> {
+  available(): Promise<{ available: number }> {
     throw new Error('Method not implemented.');
   }
-  isEnabled(): Promise<boolean> {
+  isEnabled(): Promise<{ isEnabled: boolean }> {
     throw new Error('Method not implemented.');
   }
-  isConnected(): Promise<boolean> {
+  isConnected(): Promise<{ isConnected: boolean }> {
     throw new Error('Method not implemented.');
   }
   clear(): Promise<void> {
@@ -42,7 +42,10 @@ export class BluetoothSerialWeb
   discoverUnpaired(): Promise<devices> {
     throw new Error('Method not implemented.');
   }
-  checkPermissions(_options: { permissions: permissions[]; }): Promise<PermissionStatus[]> {
+  cancelDiscovery(): Promise<void> {
+    throw new Error('Method not implemented.');
+  }
+  checkPermissions(): Promise<PermissionStatus[]> {
     throw new Error('Method not implemented.');
   }
   requestPermissions(_options: { permissions: permissions[]; }): Promise<PermissionStatus[]> {
