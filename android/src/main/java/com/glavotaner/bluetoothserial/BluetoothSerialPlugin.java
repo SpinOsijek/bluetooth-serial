@@ -70,7 +70,8 @@ public class BluetoothSerialPlugin extends Plugin {
             Bundle data = message.getData();
             ConnectionState connectionState = ConnectionState.values()[data.getInt("state")];
             if (message.what == SUCCESS) {
-                notifyListeners("connectionChange", new JSObject().put("state", connectionState.value()));
+                JSObject state = new JSObject().put("state", connectionState.value());
+                notifyListeners("connectionChange", state);
                 if (connectCall != null && connectionState == ConnectionState.CONNECTED) {
                     connectCall.resolve(state);
                     connectCall = null;
