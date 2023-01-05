@@ -26,7 +26,8 @@ npx cap sync
 * [`settings()`](#settings)
 * [`list()`](#list)
 * [`discoverUnpaired()`](#discoverunpaired)
-* [`checkPermissions(...)`](#checkpermissions)
+* [`cancelDiscovery()`](#canceldiscovery)
+* [`checkPermissions()`](#checkpermissions)
 * [`requestPermissions(...)`](#requestpermissions)
 * [`addListener('discoverUnpaired', ...)`](#addlistenerdiscoverunpaired)
 * [`addListener('connectionChange', ...)`](#addlistenerconnectionchange)
@@ -106,10 +107,10 @@ write(options: { data: string; }) => Promise<void>
 ### available()
 
 ```typescript
-available() => Promise<boolean>
+available() => Promise<{ available: number; }>
 ```
 
-**Returns:** <code>Promise&lt;boolean&gt;</code>
+**Returns:** <code>Promise&lt;{ available: number; }&gt;</code>
 
 --------------------
 
@@ -117,10 +118,10 @@ available() => Promise<boolean>
 ### isEnabled()
 
 ```typescript
-isEnabled() => Promise<boolean>
+isEnabled() => Promise<{ isEnabled: boolean; }>
 ```
 
-**Returns:** <code>Promise&lt;boolean&gt;</code>
+**Returns:** <code>Promise&lt;{ isEnabled: boolean; }&gt;</code>
 
 --------------------
 
@@ -128,10 +129,10 @@ isEnabled() => Promise<boolean>
 ### isConnected()
 
 ```typescript
-isConnected() => Promise<boolean>
+isConnected() => Promise<{ isConnected: boolean; }>
 ```
 
-**Returns:** <code>Promise&lt;boolean&gt;</code>
+**Returns:** <code>Promise&lt;{ isConnected: boolean; }&gt;</code>
 
 --------------------
 
@@ -187,15 +188,20 @@ discoverUnpaired() => Promise<devices>
 --------------------
 
 
-### checkPermissions(...)
+### cancelDiscovery()
 
 ```typescript
-checkPermissions(options: { permissions: permissions[]; }) => Promise<PermissionStatus[]>
+cancelDiscovery() => Promise<void>
 ```
 
-| Param         | Type                                                                    |
-| ------------- | ----------------------------------------------------------------------- |
-| **`options`** | <code>{ <a href="#permissions">permissions</a>: permissions[]; }</code> |
+--------------------
+
+
+### checkPermissions()
+
+```typescript
+checkPermissions() => Promise<PermissionStatus[]>
+```
 
 **Returns:** <code>Promise&lt;PermissionStatus[]&gt;</code>
 
@@ -220,13 +226,13 @@ requestPermissions(options: { permissions: permissions[]; }) => Promise<Permissi
 ### addListener('discoverUnpaired', ...)
 
 ```typescript
-addListener(event: 'discoverUnpaired', listenerFunc: discoverUnpairedCallback) => Promise<PluginListenerHandle> & PluginListenerHandle
+addListener(event: 'discoverUnpaired', listenerFunc: (event: devices) => any) => Promise<PluginListenerHandle> & PluginListenerHandle
 ```
 
-| Param              | Type                                                                          |
-| ------------------ | ----------------------------------------------------------------------------- |
-| **`event`**        | <code>'discoverUnpaired'</code>                                               |
-| **`listenerFunc`** | <code><a href="#discoverunpairedcallback">discoverUnpairedCallback</a></code> |
+| Param              | Type                                                           |
+| ------------------ | -------------------------------------------------------------- |
+| **`event`**        | <code>'discoverUnpaired'</code>                                |
+| **`listenerFunc`** | <code>(event: <a href="#devices">devices</a>) =&gt; any</code> |
 
 **Returns:** <code>Promise&lt;<a href="#pluginlistenerhandle">PluginListenerHandle</a>&gt; & <a href="#pluginlistenerhandle">PluginListenerHandle</a></code>
 
@@ -236,13 +242,13 @@ addListener(event: 'discoverUnpaired', listenerFunc: discoverUnpairedCallback) =
 ### addListener('connectionChange', ...)
 
 ```typescript
-addListener(event: 'connectionChange', listenerFunc: connectionChangeCallback) => Promise<PluginListenerHandle> & PluginListenerHandle
+addListener(event: 'connectionChange', listenerFunc: (event: { state: ConnectionState; }) => any) => Promise<PluginListenerHandle> & PluginListenerHandle
 ```
 
-| Param              | Type                                                                          |
-| ------------------ | ----------------------------------------------------------------------------- |
-| **`event`**        | <code>'connectionChange'</code>                                               |
-| **`listenerFunc`** | <code><a href="#connectionchangecallback">connectionChangeCallback</a></code> |
+| Param              | Type                                                                                       |
+| ------------------ | ------------------------------------------------------------------------------------------ |
+| **`event`**        | <code>'connectionChange'</code>                                                            |
+| **`listenerFunc`** | <code>(event: { state: <a href="#connectionstate">ConnectionState</a>; }) =&gt; any</code> |
 
 **Returns:** <code>Promise&lt;<a href="#pluginlistenerhandle">PluginListenerHandle</a>&gt; & <a href="#pluginlistenerhandle">PluginListenerHandle</a></code>
 
@@ -287,7 +293,7 @@ removeAllListeners() => Promise<void>
 
 #### PermissionStatus
 
-<code>{ [permission in permissions]: <a href="#permissionstate">PermissionState</a> }</code>
+<code>{ [permission in permissions]?: <a href="#permissionstate">PermissionState</a> }</code>
 
 
 #### permissions
@@ -298,16 +304,6 @@ removeAllListeners() => Promise<void>
 #### PermissionState
 
 <code>'prompt' | 'prompt-with-rationale' | 'granted' | 'denied'</code>
-
-
-#### discoverUnpairedCallback
-
-<code>(event: <a href="#devices">devices</a>): any</code>
-
-
-#### connectionChangeCallback
-
-<code>(event: { state: <a href="#connectionstate">ConnectionState</a>; }): any</code>
 
 
 ### Enums
