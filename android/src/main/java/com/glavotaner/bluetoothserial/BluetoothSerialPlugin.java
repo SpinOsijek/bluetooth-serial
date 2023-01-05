@@ -37,6 +37,8 @@ import com.getcapacitor.annotation.PermissionCallback;
 import org.json.JSONArray;
 import org.json.JSONException;
 
+import java.nio.charset.StandardCharsets;
+import java.util.Map;
 import java.util.Set;
 
 @SuppressLint("InlinedApi")
@@ -148,7 +150,7 @@ public class BluetoothSerialPlugin extends Plugin {
 
     @PluginMethod
     public void write(@NonNull PluginCall call) throws JSONException {
-        byte[] data = (byte[]) call.getData().get("data");
+        byte[] data = ((String) call.getData().get("data")).getBytes(StandardCharsets.UTF_8);
         writeCall = call;
         implementation.write(data);
     }
