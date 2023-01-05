@@ -1,12 +1,12 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { WebPlugin } from '@capacitor/core';
 
-import type { BluetoothDevice, BluetoothSerialPlugin, devices, permissions, PermissionStatus } from './definitions';
+import type { BluetoothSerialPlugin, devices, permissions, PermissionStatus } from './definitions';
 
 export class BluetoothSerialWeb
   extends WebPlugin
   implements BluetoothSerialPlugin {
-  connect(_options: { address: string; }): Promise<BluetoothDevice> {
+  connect(_options: { address: string; }): Promise<void> {
     throw new Error('Method not implemented.');
   }
   disconnect(): Promise<void> {

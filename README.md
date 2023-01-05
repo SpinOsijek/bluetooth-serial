@@ -59,14 +59,16 @@ echo(options: { value: string; }) => Promise<{ value: string; }>
 ### connect(...)
 
 ```typescript
-connect(options: { address: string; }) => Promise<BluetoothDevice>
+connect(options: { address: string; }) => Promise<void>
 ```
+
+Connects to the bluetooth device with the given address.
+The plugin only retains one connection at a time; upon connecting to a device, while there is already an existing connection,
+the previous device is disconnected.
 
 | Param         | Type                              |
 | ------------- | --------------------------------- |
 | **`options`** | <code>{ address: string; }</code> |
-
-**Returns:** <code>Promise&lt;<a href="#bluetoothdevice">BluetoothDevice</a>&gt;</code>
 
 --------------------
 
@@ -77,6 +79,9 @@ connect(options: { address: string; }) => Promise<BluetoothDevice>
 disconnect() => Promise<void>
 ```
 
+Disconnects from the currently connected device.
+This may be called while there is no connected device; in that case, the method will resolve with void.
+
 --------------------
 
 
@@ -85,6 +90,8 @@ disconnect() => Promise<void>
 ```typescript
 read() => Promise<{ data: string; }>
 ```
+
+Returns data emitted from the currently connected device.
 
 **Returns:** <code>Promise&lt;{ data: string; }&gt;</code>
 
@@ -96,6 +103,8 @@ read() => Promise<{ data: string; }>
 ```typescript
 write(options: { data: string; }) => Promise<void>
 ```
+
+Writes data to the currently connected device.
 
 | Param         | Type                           |
 | ------------- | ------------------------------ |
@@ -110,6 +119,8 @@ write(options: { data: string; }) => Promise<void>
 available() => Promise<{ available: number; }>
 ```
 
+Returns the length of the data that can be read by calling read().
+
 **Returns:** <code>Promise&lt;{ available: number; }&gt;</code>
 
 --------------------
@@ -120,6 +131,8 @@ available() => Promise<{ available: number; }>
 ```typescript
 isEnabled() => Promise<{ isEnabled: boolean; }>
 ```
+
+Returns true or false depending on whether bluetooth is enabled.
 
 **Returns:** <code>Promise&lt;{ isEnabled: boolean; }&gt;</code>
 
@@ -132,6 +145,8 @@ isEnabled() => Promise<{ isEnabled: boolean; }>
 isConnected() => Promise<{ isConnected: boolean; }>
 ```
 
+Returns true or false depending on whether the plugin is currently connected to a device.
+
 **Returns:** <code>Promise&lt;{ isConnected: boolean; }&gt;</code>
 
 --------------------
@@ -143,6 +158,8 @@ isConnected() => Promise<{ isConnected: boolean; }>
 clear() => Promise<void>
 ```
 
+Clears the data readable by calling read().
+
 --------------------
 
 
@@ -151,6 +168,8 @@ clear() => Promise<void>
 ```typescript
 enable() => Promise<{ isEnabled: boolean; }>
 ```
+
+Displays the native prompt for enabling bluetooth. Returns true or false depending on whether the user enabled bluetooth.
 
 **Returns:** <code>Promise&lt;{ isEnabled: boolean; }&gt;</code>
 
@@ -163,6 +182,8 @@ enable() => Promise<{ isEnabled: boolean; }>
 settings() => Promise<void>
 ```
 
+Opens the native bluetooth settings activity. Resolves immediately upon being called.
+
 --------------------
 
 
@@ -171,6 +192,8 @@ settings() => Promise<void>
 ```typescript
 list() => Promise<devices>
 ```
+
+Returns a list of bonded <a href="#devices">devices</a>. This includes <a href="#devices">devices</a> that were previously paired with the user's device
 
 **Returns:** <code>Promise&lt;<a href="#devices">devices</a>&gt;</code>
 
@@ -183,6 +206,9 @@ list() => Promise<devices>
 discoverUnpaired() => Promise<devices>
 ```
 
+Begins the discovery of nearby <a href="#devices">devices</a> and resolves with them once discovery is finished.
+There may only be one discovery process at a time.
+
 **Returns:** <code>Promise&lt;<a href="#devices">devices</a>&gt;</code>
 
 --------------------
@@ -194,6 +220,9 @@ discoverUnpaired() => Promise<devices>
 cancelDiscovery() => Promise<void>
 ```
 
+Cancels current unpaired <a href="#devices">devices</a> discovery, if there is one in progress. If there is no discovery in progress, resolves with void.
+Be sure to note that calling this will reject any existing discoverUnpaired() call which hasn't resolved yet.
+
 --------------------
 
 
@@ -202,6 +231,9 @@ cancelDiscovery() => Promise<void>
 ```typescript
 checkPermissions() => Promise<PermissionStatus[]>
 ```
+
+Takes into account the fact that SCAN and CONNECT <a href="#permissions">permissions</a> only exist on Android 11+; those <a href="#permissions">permissions</a> will always resolve as GRANTED
+on <a href="#devices">devices</a> below Android 11.
 
 **Returns:** <code>Promise&lt;PermissionStatus[]&gt;</code>
 
@@ -213,6 +245,9 @@ checkPermissions() => Promise<PermissionStatus[]>
 ```typescript
 requestPermissions(options: { permissions: permissions[]; }) => Promise<PermissionStatus[]>
 ```
+
+Takes into account the fact that SCAN and CONNECT <a href="#permissions">permissions</a> only exist on Android 11+; those <a href="#permissions">permissions</a> will always resolve as GRANTED
+on <a href="#devices">devices</a> below Android 11.
 
 | Param         | Type                                                                    |
 | ------------- | ----------------------------------------------------------------------- |
@@ -273,7 +308,7 @@ removeAllListeners() => Promise<void>
 | ------------- | ------------------- |
 | **`address`** | <code>string</code> |
 | **`name`**    | <code>string</code> |
-| **`class`**   | <code>string</code> |
+| **`class`**   | <code>number</code> |
 
 
 #### PluginListenerHandle
