@@ -3,16 +3,19 @@ package com.glavotaner.bluetoothserial;
 import static com.glavotaner.bluetoothserial.Message.ERROR;
 import static com.glavotaner.bluetoothserial.Message.SUCCESS;
 
+import android.Manifest;
 import android.annotation.SuppressLint;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothSocket;
+import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
+import androidx.core.app.ActivityCompat;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -58,14 +61,22 @@ public class BluetoothSerial {
         return mAdapter.isEnabled();
     }
 
+    // connect
     @SuppressLint("MissingPermission")
     public Set<BluetoothDevice> getBondedDevices() {
         return mAdapter.getBondedDevices();
     }
 
+    // scan
     @SuppressLint("MissingPermission")
     public void startDiscovery() {
         mAdapter.startDiscovery();
+    }
+
+    // scan
+    @SuppressLint("MissingPermission")
+    public void cancelDiscovery() {
+        mAdapter.cancelDiscovery();
     }
 
     /**
@@ -126,7 +137,6 @@ public class BluetoothSerial {
      *
      * @param socket The BluetoothSocket on which the connection was made
      */
-    @SuppressLint("MissingPermission")
     public synchronized void startIOThread(BluetoothSocket socket, final String socketType) {
         if (D) Log.d(TAG, "connected, Socket Type:" + socketType);
         if (mConnectThread != null) {
@@ -160,7 +170,14 @@ public class BluetoothSerial {
         IOThread r;
         // Synchronize a copy of the ConnectedThread
         synchronized (this) {
-            if (mState != ConnectionState.CONNECTED) return;
+            if (mState != ConnectionState.CONNECTED) {
+                Message message = writeHandler.obtainMessage(ERROR);
+                Bundle bundle = new Bundle();
+                bundle.putString("error", "Not connected");
+                message.setData(bundle);
+                message.sendToTarget();
+                return;
+            }
             r = mIOThread;
         }
         // Perform the write unsynchronized
@@ -184,7 +201,6 @@ public class BluetoothSerial {
      * with a device. It runs straight through; the connection either
      * succeeds or fails.
      */
-    @SuppressLint("MissingPermission")
     private class ConnectThread extends Thread {
         private final BluetoothSocket mmSocket;
         private final String mSocketType = "insecure";
@@ -193,37 +209,45 @@ public class BluetoothSerial {
             mmSocket = getSocket(device);
         }
 
+        // connect
+        @SuppressLint("MissingPermission")
         private BluetoothSocket getSocket(BluetoothDevice device) {
             BluetoothSocket socket = null;
             try {
                 socket = device.createInsecureRfcommSocketToServiceRecord(UUID_SPP);
             } catch (IOException e) {
                 Log.e(TAG, "Socket Type: " + mSocketType + "create() failed", e);
+                sendConnectionErrorToPlugin("Could not connect");
             }
             return socket;
         }
 
         public void run() {
-            Log.i(TAG, "BEGIN mConnectThread SocketType:" + mSocketType);
-            setName("ConnectThread" + mSocketType);
-            // Always cancel discovery because it will slow down a connection
-            mAdapter.cancelDiscovery();
-            connectToSocket();
-            // Reset the ConnectThread because we're done
-            resetConnectThread();
-            startIOThread(mmSocket, mSocketType);
-            sendStateToPlugin(ConnectionState.CONNECTED);
+            // could not connect
+            if (mmSocket == null) {
+                resetConnectThread();
+                setState(ConnectionState.NONE);
+            } else {
+                Log.i(TAG, "BEGIN mConnectThread SocketType:" + mSocketType);
+                setName("ConnectThread" + mSocketType);
+                // Always cancel discovery because it will slow down a connection
+                cancelDiscovery();
+                connectToSocket();
+                // Reset the ConnectThread because we're done
+                resetConnectThread();
+                startIOThread(mmSocket, mSocketType);
+            }
         }
 
+        // connect
+        @SuppressLint("MissingPermission")
         private void connectToSocket() {
             try {
-                // This is a blocking call and will only return on a successful connection or an exception
-                Log.i(TAG, "Connecting to socket...");
                 mmSocket.connect();
                 Log.i(TAG, "Connected");
             } catch (IOException e) {
                 Log.e(TAG, e.toString());
-                sendConnectionErrorToPlugin("Unable to connect to device");
+                sendConnectionErrorToPlugin(e.getMessage());
                 BluetoothSerial.this.resetService();
             }
         }
@@ -261,8 +285,11 @@ public class BluetoothSerial {
             try {
                 tmpIn = socket.getInputStream();
                 tmpOut = socket.getOutputStream();
+                setState(ConnectionState.CONNECTED);
             } catch (IOException e) {
                 Log.e(TAG, "temp sockets not created", e);
+                sendConnectionErrorToPlugin(e.getMessage());
+                BluetoothSerial.this.resetService();
             }
             mmInStream = tmpIn;
             mmOutStream = tmpOut;
@@ -300,17 +327,17 @@ public class BluetoothSerial {
          * @param buffer The bytes to write
          */
         public void write(byte[] buffer) {
-            Message message = writeHandler.obtainMessage(ERROR);
+            Message message = writeHandler.obtainMessage(SUCCESS);
             try {
                 mmOutStream.write(buffer);
-                // Share the sent message back to the UI Activity
-                message.what = SUCCESS;
             } catch (IOException e) {
+                message.what = ERROR;
                 Log.e(TAG, "Exception during write", e);
                 Bundle bundle = new Bundle();
                 bundle.putString("error", e.getMessage());
                 message.setData(bundle);
             }
+            // Share the sent message back to the UI Activity
             message.sendToTarget();
         }
 
