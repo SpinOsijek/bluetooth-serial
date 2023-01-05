@@ -352,6 +352,86 @@ public class BluetoothSerialPlugin extends Plugin {
         return json;
     }
 
+    @PluginMethod
+    @Override
+    public void checkPermissions(PluginCall call) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            super.checkPermissions(call);
+        } else {
+            call.resolve(getCompatPermissions());
+        }
+    }
+
+    private JSObject getCompatPermissions() {
+        Map<String, PermissionState> permissions = getPermissionStates();
+        JSObject response = new JSObject();
+        for(Map.Entry<String, PermissionState> state: permissions.entrySet()) {
+            String alias = state.getKey();
+            PermissionState permission = state.getValue();
+            // for Android 11< we only check the location permission, all others are granted
+            if (alias.equals(LOCATION)) {
+                response.put(LOCATION, permission);
+            } else {
+                response.put(alias, PermissionState.GRANTED);
+            }
+        }
+        return response;
+    }
+
+    @PluginMethod
+    @Override
+    public void requestPermissions(PluginCall call) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            super.requestPermissions(call);
+        } else {
+            requestCompatPermissions(call);
+        }
+    }
+
+    /*
+    * Request location permission if requested, otherwise resolve with all requested permissions
+    * granted, as Android 11< only requires location permission.
+    * */
+    private void requestCompatPermissions(PluginCall call) {
+        JSArray requestedPermissions = call.getArray("permissions");
+        try {
+            // for Android 11< we only need/can request location permission, all others are granted
+            if (requestedPermissions.toList().contains(LOCATION) && getPermissionState(LOCATION) != PermissionState.GRANTED) {
+                requestPermissionForAlias(LOCATION, call, "requestPermsCallback");
+            } else {
+                JSObject permissions = getGrantedPermissions(requestedPermissions);
+                call.resolve(permissions);
+            }
+        } catch(JSONException exception) {
+            String message = exception.getMessage();
+            Log.e(TAG, message);
+            call.reject(message);
+        }
+    }
+
+    @PermissionCallback
+    private void requestPermsCallback(PluginCall call) {
+        JSArray requestedPermissions = call.getArray("permissions");
+        try {
+            JSObject permissions = getGrantedPermissions(requestedPermissions);
+            permissions.put(LOCATION, getPermissionState(LOCATION));
+            call.resolve(permissions);
+        } catch (JSONException exception) {
+            String message = exception.getMessage();
+            Log.e(TAG, message);
+            call.reject(message);
+        }
+    }
+
+    private JSObject getGrantedPermissions(JSArray requestedPermissions) throws JSONException {
+        JSObject response = new JSObject();
+        for (int i = 0; i < requestedPermissions.length(); i++) {
+            String alias = (String) requestedPermissions.get(i);
+            response.put(alias, PermissionState.GRANTED);
+        }
+        return response;
+    }
+
     @Override
     protected void handleOnDestroy() {
         super.handleOnDestroy();
@@ -360,6 +440,8 @@ public class BluetoothSerialPlugin extends Plugin {
         }
     }
 
+    // This is called only for permissions that may not exist on older Android versions,
+    // otherwise getPermissionState(alias) is used,
     private boolean hasCompatPermission(String alias) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             return getPermissionState(alias) == PermissionState.GRANTED;
