@@ -3,16 +3,19 @@ package com.glavotaner.bluetoothserial;
 import static com.glavotaner.bluetoothserial.Message.ERROR;
 import static com.glavotaner.bluetoothserial.Message.SUCCESS;
 
+import android.Manifest;
 import android.annotation.SuppressLint;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothSocket;
+import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
+import androidx.core.app.ActivityCompat;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -164,7 +167,14 @@ public class BluetoothSerial {
         IOThread r;
         // Synchronize a copy of the ConnectedThread
         synchronized (this) {
-            if (mState != ConnectionState.CONNECTED) return;
+            if (mState != ConnectionState.CONNECTED) {
+                Message message = writeHandler.obtainMessage(ERROR);
+                Bundle bundle = new Bundle();
+                bundle.putString("error", "Not connected");
+                message.setData(bundle);
+                message.sendToTarget();
+                return;
+            }
             r = mIOThread;
         }
         // Perform the write unsynchronized
@@ -264,7 +274,7 @@ public class BluetoothSerial {
             try {
                 tmpIn = socket.getInputStream();
                 tmpOut = socket.getOutputStream();
-                sendStateToPlugin(ConnectionState.CONNECTED);
+                setState(ConnectionState.CONNECTED);
             } catch (IOException e) {
                 Log.e(TAG, "temp sockets not created", e);
                 sendConnectionErrorToPlugin(e.getMessage());
