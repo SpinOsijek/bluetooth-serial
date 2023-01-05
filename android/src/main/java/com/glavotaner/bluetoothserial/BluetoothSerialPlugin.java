@@ -268,8 +268,22 @@ public class BluetoothSerialPlugin extends Plugin {
 
     @PluginMethod
     public void cancelDiscovery(PluginCall call) {
-        cancelDiscovery();
-        call.resolve();
+        if (hasCompatPermission(SCAN)) {
+            cancelDiscovery();
+            call.resolve();
+        } else {
+            requestPermissionForAlias(SCAN, call, "cancelDiscoveryPermsCallback");
+        }
+    }
+
+    @PermissionCallback
+    private void cancelDiscoveryPermsCallback(PluginCall call) {
+        if (getPermissionState(SCAN) == PermissionState.GRANTED) {
+            cancelDiscovery();
+            call.resolve();
+        } else {
+            call.reject("Scan permission denied");
+        }
     }
 
     private void cancelDiscovery() {
