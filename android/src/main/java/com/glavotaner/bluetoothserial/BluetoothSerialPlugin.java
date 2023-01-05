@@ -199,11 +199,10 @@ public class BluetoothSerialPlugin extends Plugin {
 
     @PluginMethod
     public void enable(PluginCall call) {
-        // TODO connect permission is required
-        if (getPermissionState(LOCATION) == PermissionState.GRANTED) {
+        if (getPermissionState(CONNECT) == PermissionState.GRANTED) {
             enableBluetooth(call);
         } else {
-            requestPermissionForAlias(LOCATION, call, "enablePermsCallback");
+            requestPermissionForAlias(CONNECT, call, "enablePermsCallback");
         }
     }
 
@@ -214,10 +213,10 @@ public class BluetoothSerialPlugin extends Plugin {
 
     @PermissionCallback
     private void enablePermsCallback(PluginCall call) {
-        if (getPermissionState(LOCATION) == PermissionState.GRANTED) {
+        if (getPermissionState(CONNECT) == PermissionState.GRANTED) {
             enableBluetooth(call);
         } else {
-            call.reject("Location permission denied");
+            call.reject("Connect permission denied");
         }
     }
 
