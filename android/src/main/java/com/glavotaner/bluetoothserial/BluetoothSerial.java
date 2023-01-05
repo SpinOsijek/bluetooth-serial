@@ -216,7 +216,6 @@ public class BluetoothSerial {
             // Reset the ConnectThread because we're done
             resetConnectThread();
             startIOThread(mmSocket, mSocketType);
-            sendStateToPlugin(ConnectionState.CONNECTED);
         }
 
         private void connectToSocket() {
@@ -227,7 +226,7 @@ public class BluetoothSerial {
                 Log.i(TAG, "Connected");
             } catch (IOException e) {
                 Log.e(TAG, e.toString());
-                sendConnectionErrorToPlugin("Unable to connect to device");
+                sendConnectionErrorToPlugin(e.getMessage());
                 BluetoothSerial.this.resetService();
             }
         }
@@ -265,8 +264,11 @@ public class BluetoothSerial {
             try {
                 tmpIn = socket.getInputStream();
                 tmpOut = socket.getOutputStream();
+                sendStateToPlugin(ConnectionState.CONNECTED);
             } catch (IOException e) {
                 Log.e(TAG, "temp sockets not created", e);
+                sendConnectionErrorToPlugin(e.getMessage());
+                BluetoothSerial.this.resetService();
             }
             mmInStream = tmpIn;
             mmOutStream = tmpOut;
