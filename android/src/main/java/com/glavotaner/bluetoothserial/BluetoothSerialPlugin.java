@@ -201,7 +201,7 @@ public class BluetoothSerialPlugin extends Plugin {
 
     @PluginMethod
     public void enable(PluginCall call) {
-        if (getPermissionState(CONNECT) == PermissionState.GRANTED) {
+        if (hasCompatPermission(CONNECT)) {
             enableBluetooth(call);
         } else {
             requestPermissionForAlias(CONNECT, call, "enablePermsCallback");
@@ -282,7 +282,7 @@ public class BluetoothSerialPlugin extends Plugin {
 
     @PermissionCallback
     private void cancelDiscoveryPermsCallback(PluginCall call) {
-        if (getPermissionState(SCAN) == PermissionState.GRANTED) {
+        if (hasCompatPermission(SCAN)) {
             cancelDiscovery();
             call.resolve();
         } else {
@@ -367,7 +367,7 @@ public class BluetoothSerialPlugin extends Plugin {
             return true;
         }
     }
-    
+
     private boolean rejectIfBluetoothDisabled(PluginCall call) {
         boolean isEnabled = implementation.isEnabled();
         if (!isEnabled) {
