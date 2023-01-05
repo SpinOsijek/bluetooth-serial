@@ -114,6 +114,7 @@ public class BluetoothSerialPlugin extends Plugin {
 
     @PluginMethod
     public void connect(PluginCall call) {
+        if (rejectIfBluetoothDisabled(call)) return;
         if (hasCompatPermission(CONNECT)) {
             connectToDevice(call);
         } else {
@@ -150,6 +151,7 @@ public class BluetoothSerialPlugin extends Plugin {
 
     @PluginMethod
     public void write(@NonNull PluginCall call) throws JSONException {
+        if (rejectIfBluetoothDisabled(call)) return;
         byte[] data = ((String) call.getData().get("data")).getBytes(StandardCharsets.UTF_8);
         writeCall = call;
         implementation.write(data);
@@ -230,6 +232,7 @@ public class BluetoothSerialPlugin extends Plugin {
 
     @PluginMethod
     public void list(PluginCall call) {
+        if (rejectIfBluetoothDisabled(call)) return;
         if (hasCompatPermission(CONNECT)) {
             listPairedDevices(call);
         } else {
@@ -259,6 +262,7 @@ public class BluetoothSerialPlugin extends Plugin {
 
     @PluginMethod
     public void discoverUnpaired(PluginCall call) {
+        if (rejectIfBluetoothDisabled(call)) return;
         if (hasCompatPermission(SCAN)) {
             startDiscovery(call);
         } else {
@@ -362,6 +366,14 @@ public class BluetoothSerialPlugin extends Plugin {
         } else {
             return true;
         }
+    }
+    
+    private boolean rejectIfBluetoothDisabled(PluginCall call) {
+        boolean isEnabled = implementation.isEnabled();
+        if (!isEnabled) {
+            call.reject("Bluetooth is not enabled");
+        }
+        return !isEnabled;
     }
 
 }
