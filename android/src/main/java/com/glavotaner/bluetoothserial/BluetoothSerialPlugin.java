@@ -1,6 +1,5 @@
 package com.glavotaner.bluetoothserial;
 
-import static com.glavotaner.bluetoothserial.Message.ERROR;
 import static com.glavotaner.bluetoothserial.Message.SUCCESS;
 
 import android.Manifest;

@@ -3,19 +3,16 @@ package com.glavotaner.bluetoothserial;
 import static com.glavotaner.bluetoothserial.Message.ERROR;
 import static com.glavotaner.bluetoothserial.Message.SUCCESS;
 
-import android.Manifest;
 import android.annotation.SuppressLint;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothSocket;
-import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
-import androidx.core.app.ActivityCompat;
 
 import java.io.IOException;
 import java.io.InputStream;
