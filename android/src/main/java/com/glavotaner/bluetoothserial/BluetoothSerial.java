@@ -150,8 +150,10 @@ public class BluetoothSerial {
     }
 
     private void sendConnectionErrorToPlugin(String error) {
+        ConnectionState disconnected = ConnectionState.NONE;
+        setState(disconnected);
         Bundle bundle = new Bundle();
-        bundle.putInt("state", ConnectionState.NONE.value());
+        bundle.putInt("state", disconnected.value());
         bundle.putString("error", error);
         sendConnectionStateToPlugin(ERROR, bundle);
     }
