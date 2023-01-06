@@ -122,7 +122,13 @@ public class BluetoothSerialPlugin extends Plugin {
 
     private void connectToDevice(@NonNull PluginCall call) {
         String macAddress = call.getString("address");
-        BluetoothDevice device = implementation.getRemoteDevice(macAddress);
+        BluetoothDevice device;
+        try {
+            device = implementation.getRemoteDevice(macAddress);
+        } catch(IllegalArgumentException error) {
+            call.reject(error.getMessage());
+            return;
+        }
         if (device != null) {
             connectCall = call;
             boolean secureConnection = Boolean.TRUE.equals(call.getBoolean("secure"));
