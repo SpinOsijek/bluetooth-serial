@@ -37,7 +37,6 @@ import org.json.JSONArray;
 import org.json.JSONException;
 
 import java.nio.charset.StandardCharsets;
-import java.util.Map;
 import java.util.Set;
 
 @SuppressLint("InlinedApi")
@@ -117,7 +116,7 @@ public class BluetoothSerialPlugin extends Plugin {
         if (hasCompatPermission(CONNECT)) {
             connectToDevice(call);
         } else {
-            requestPermissionForAlias(CONNECT, call, "connectPermsCallback");
+            requestPermissionForAlias(CONNECT, call, "connectPermissionCallback");
         }
     }
 
@@ -130,15 +129,6 @@ public class BluetoothSerialPlugin extends Plugin {
             buffer.setLength(0);
         } else {
             call.reject("Could not connect to " + macAddress);
-        }
-    }
-
-    @PermissionCallback
-    private void connectPermsCallback(PluginCall call) {
-        if (getPermissionState(CONNECT) == PermissionState.GRANTED) {
-            connectToDevice(call);
-        } else {
-            call.reject("Connect permission denied");
         }
     }
 
@@ -203,22 +193,13 @@ public class BluetoothSerialPlugin extends Plugin {
         if (hasCompatPermission(CONNECT)) {
             enableBluetooth(call);
         } else {
-            requestPermissionForAlias(CONNECT, call, "enablePermsCallback");
+            requestPermissionForAlias(CONNECT, call, "connectPermissionCallback");
         }
     }
 
     private void enableBluetooth(PluginCall call) {
         Intent enableIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
         startActivityForResult(call, enableIntent, "enableBluetoothActivityCallback");
-    }
-
-    @PermissionCallback
-    private void enablePermsCallback(PluginCall call) {
-        if (getPermissionState(CONNECT) == PermissionState.GRANTED) {
-            enableBluetooth(call);
-        } else {
-            call.reject("Connect permission denied");
-        }
     }
 
     @ActivityCallback
@@ -235,16 +216,7 @@ public class BluetoothSerialPlugin extends Plugin {
         if (hasCompatPermission(CONNECT)) {
             listPairedDevices(call);
         } else {
-            requestPermissionForAlias(CONNECT, call, "listPermsCallback");
-        }
-    }
-
-    @PermissionCallback
-    private void listPermsCallback(PluginCall call) {
-        if (getPermissionState(CONNECT) == PermissionState.GRANTED) {
-            listPairedDevices(call);
-        } else {
-            call.reject("Connect permission denied");
+            requestPermissionForAlias(CONNECT, call, "connectPermissionCallback");
         }
     }
 
@@ -265,7 +237,7 @@ public class BluetoothSerialPlugin extends Plugin {
         if (hasCompatPermission(SCAN)) {
             startDiscovery(call);
         } else {
-            requestPermissionForAlias(SCAN, call, "discoverPermsCallback");
+            requestPermissionForAlias(SCAN, call, "scanPermissionCallback");
         }
     }
 
@@ -275,17 +247,7 @@ public class BluetoothSerialPlugin extends Plugin {
             cancelDiscovery();
             call.resolve();
         } else {
-            requestPermissionForAlias(SCAN, call, "cancelDiscoveryPermsCallback");
-        }
-    }
-
-    @PermissionCallback
-    private void cancelDiscoveryPermsCallback(PluginCall call) {
-        if (hasCompatPermission(SCAN)) {
-            cancelDiscovery();
-            call.resolve();
-        } else {
-            call.reject("Scan permission denied");
+            requestPermissionForAlias(SCAN, call, "scanPermissionCallback");
         }
     }
 
@@ -296,15 +258,6 @@ public class BluetoothSerialPlugin extends Plugin {
             implementation.cancelDiscovery();
             getActivity().unregisterReceiver(discoveryReceiver);
             discoveryReceiver = null;
-        }
-    }
-
-    @PermissionCallback
-    private void discoverPermsCallback(PluginCall call) {
-        if (getPermissionState(SCAN) == PermissionState.GRANTED) {
-            startDiscovery(call);
-        } else {
-            call.reject("Scan permission denied");
         }
     }
 
@@ -354,24 +307,15 @@ public class BluetoothSerialPlugin extends Plugin {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             super.checkPermissions(call);
         } else {
-            call.resolve(getCompatPermissions());
+            checkCompatPermissions(call);
         }
     }
 
-    private JSObject getCompatPermissions() {
-        Map<String, PermissionState> permissions = getPermissionStates();
-        JSObject response = new JSObject();
-        for(Map.Entry<String, PermissionState> state: permissions.entrySet()) {
-            String alias = state.getKey();
-            PermissionState permission = state.getValue();
-            // for Android 11< we only check the location permission, all others are granted
-            if (alias.equals(LOCATION)) {
-                response.put(LOCATION, permission);
-            } else {
-                response.put(alias, PermissionState.GRANTED);
-            }
-        }
-        return response;
+    private void checkCompatPermissions(PluginCall call) {
+        call.resolve(new JSObject()
+                .put(LOCATION, getPermissionState(LOCATION))
+                .put(SCAN, PermissionState.GRANTED)
+                .put(CONNECT, PermissionState.GRANTED));
     }
 
     @PluginMethod
@@ -428,11 +372,31 @@ public class BluetoothSerialPlugin extends Plugin {
         return response;
     }
 
-    @Override
-    protected void handleOnDestroy() {
-        super.handleOnDestroy();
-        if (implementation != null) {
-            implementation.resetService();
+    @PermissionCallback
+    private void connectPermissionCallback(PluginCall call) {
+        if (getPermissionState(CONNECT) == PermissionState.GRANTED) {
+            switch(call.getMethodName()) {
+                case "enable": enableBluetooth(call); break;
+                case "list": listPairedDevices(call); break;
+                case "connect": connectToDevice(call); break;
+            }
+        } else {
+            call.reject("Connect permission denied");
+        }
+    }
+
+    @PermissionCallback
+    private void scanPermissionCallback(PluginCall call) {
+        if (getPermissionState(SCAN) == PermissionState.GRANTED) {
+            switch(call.getMethodName()) {
+                case "discoverUnpaired": startDiscovery(call); break;
+                case "cancelDiscovery": {
+                    cancelDiscovery();
+                    call.resolve();
+                } break;
+            }
+        } else {
+            call.reject("Scan permission denied");
         }
     }
 
@@ -452,6 +416,14 @@ public class BluetoothSerialPlugin extends Plugin {
             call.reject("Bluetooth is not enabled");
         }
         return !isEnabled;
+    }
+
+    @Override
+    protected void handleOnDestroy() {
+        super.handleOnDestroy();
+        if (implementation != null) {
+            implementation.resetService();
+        }
     }
 
 }
