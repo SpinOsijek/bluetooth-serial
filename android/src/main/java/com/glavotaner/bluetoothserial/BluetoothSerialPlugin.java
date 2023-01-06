@@ -341,14 +341,11 @@ public class BluetoothSerialPlugin extends Plugin {
 
     @SuppressLint("MissingPermission")
     public static JSObject deviceToJSON(@NonNull BluetoothDevice device) {
-        JSObject json = new JSObject()
-                .put("name", device.getName())
-                .put("address", device.getAddress());
         BluetoothClass btClass = device.getBluetoothClass();
-        if (btClass != null) {
-            json.put("deviceClass", btClass.getDeviceClass());
-        }
-        return json;
+        return new JSObject()
+                .put("address", device.getAddress())
+                .put("name", device.getName())
+                .put("deviceClass", btClass != null ? btClass.getDeviceClass() : null);
     }
 
     @PluginMethod
