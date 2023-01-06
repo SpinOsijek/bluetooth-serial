@@ -59,16 +59,16 @@ echo(options: { value: string; }) => Promise<{ value: string; }>
 ### connect(...)
 
 ```typescript
-connect(options: { address: string; }) => Promise<void>
+connect(options: { address: string; secure?: boolean; }) => Promise<void>
 ```
 
 Connects to the bluetooth device with the given address.
 The plugin only retains one connection at a time; upon connecting to a device, while there is already an existing connection,
 the previous device is disconnected.
 
-| Param         | Type                              |
-| ------------- | --------------------------------- |
-| **`options`** | <code>{ address: string; }</code> |
+| Param         | Type                                                |
+| ------------- | --------------------------------------------------- |
+| **`options`** | <code>{ address: string; secure?: boolean; }</code> |
 
 --------------------
 

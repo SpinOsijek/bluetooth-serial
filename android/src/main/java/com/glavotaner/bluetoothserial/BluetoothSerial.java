@@ -100,17 +100,41 @@ public class BluetoothSerial {
         setState(ConnectionState.NONE);
     }
 
+    // connect
+    @SuppressLint("MissingPermission")
+    public synchronized void connect(BluetoothDevice device) {
+        if (D) Log.d(TAG, "connect to: " + device);
+        try {
+            BluetoothSocket secureSocket = device.createRfcommSocketToServiceRecord(UUID_SPP);
+            connect(secureSocket, "secure");
+        } catch (IOException e) {
+            Log.e(TAG, "Socket Type: secure create() failed", e);
+            sendConnectionErrorToPlugin(e.getMessage());
+        }
+    }
+
+    // connect
+    @SuppressLint("MissingPermission")
+    public synchronized void connectInsecure(BluetoothDevice device) {
+        if (D) Log.d(TAG, "connect to: " + device);
+        try {
+            BluetoothSocket insecureSocket = device.createInsecureRfcommSocketToServiceRecord(UUID_SPP);
+            connect(insecureSocket, "insecure");
+        } catch (IOException e) {
+            Log.e(TAG, "Socket Type: insecure create() failed", e);
+            sendConnectionErrorToPlugin(e.getMessage());
+        }
+    }
+
     /**
      * Start the ConnectThread to initiate a connection to a remote device.
      *
-     * @param device The BluetoothDevice to connect
      */
-    public synchronized void connect(BluetoothDevice device) {
-        if (D) Log.d(TAG, "connect to: " + device);
+    private synchronized void connect(BluetoothSocket socket, String socketType) {
         // Cancel any thread attempting to make a connection
         closeRunningThreads();
         // Start the thread to connect with the given device
-        mConnectThread = new ConnectThread(device);
+        mConnectThread = new ConnectThread(socket, socketType);
         mConnectThread.start();
         setState(ConnectionState.CONNECTING);
     }
@@ -120,7 +144,7 @@ public class BluetoothSerial {
      *
      * @param socket The BluetoothSocket on which the connection was made
      */
-    public synchronized void startIOThread(BluetoothSocket socket, final String socketType) {
+    private synchronized void startIOThread(BluetoothSocket socket, final String socketType) {
         if (D) Log.d(TAG, "connected, Socket Type:" + socketType);
         closeRunningThreads();
         // Start the thread to manage the connection and perform transmissions
@@ -181,23 +205,11 @@ public class BluetoothSerial {
      */
     private class ConnectThread extends Thread {
         private final BluetoothSocket mmSocket;
-        private final String mSocketType = "insecure";
+        private final String mSocketType;
 
-        public ConnectThread(BluetoothDevice device) {
-            mmSocket = getSocket(device);
-        }
-
-        // connect
-        @SuppressLint("MissingPermission")
-        private BluetoothSocket getSocket(BluetoothDevice device) {
-            BluetoothSocket socket = null;
-            try {
-                socket = device.createInsecureRfcommSocketToServiceRecord(UUID_SPP);
-            } catch (IOException e) {
-                Log.e(TAG, "Socket Type: " + mSocketType + "create() failed", e);
-                sendConnectionErrorToPlugin("Could not connect");
-            }
-            return socket;
+        public ConnectThread(BluetoothSocket socket, String socketType) {
+            mmSocket = socket;
+            mSocketType = socketType;
         }
 
         public void run() {
