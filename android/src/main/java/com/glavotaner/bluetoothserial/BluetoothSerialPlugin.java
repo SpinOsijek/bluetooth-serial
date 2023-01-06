@@ -337,7 +337,7 @@ public class BluetoothSerialPlugin extends Plugin {
         try {
             // for Android 11< we only need/can request location permission, all others are granted
             if (requestedPermissions.toList().contains(LOCATION) && getPermissionState(LOCATION) != PermissionState.GRANTED) {
-                requestPermissionForAlias(LOCATION, call, "requestPermsCallback");
+                requestPermissionForAlias(LOCATION, call, "requestCompatPermissionsCallback");
             } else {
                 JSObject permissions = getGrantedPermissions(requestedPermissions);
                 call.resolve(permissions);
@@ -350,7 +350,7 @@ public class BluetoothSerialPlugin extends Plugin {
     }
 
     @PermissionCallback
-    private void requestPermsCallback(PluginCall call) {
+    private void requestCompatPermissionsCallback(PluginCall call) {
         JSArray requestedPermissions = call.getArray("permissions");
         try {
             JSObject permissions = getGrantedPermissions(requestedPermissions);
@@ -390,10 +390,7 @@ public class BluetoothSerialPlugin extends Plugin {
         if (getPermissionState(SCAN) == PermissionState.GRANTED) {
             switch(call.getMethodName()) {
                 case "discoverUnpaired": startDiscovery(call); break;
-                case "cancelDiscovery": {
-                    cancelDiscovery();
-                    call.resolve();
-                } break;
+                case "cancelDiscovery": cancelDiscovery(call); break;
             }
         } else {
             call.reject("Scan permission denied");
