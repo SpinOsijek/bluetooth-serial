@@ -96,14 +96,7 @@ public class BluetoothSerial {
 
     public synchronized void resetService() {
         if (D) Log.d(TAG, "start");
-        if (mConnectThread != null) {
-            mConnectThread.cancel();
-            mConnectThread = null;
-        }
-        if (mIOThread != null) {
-            mIOThread.cancel();
-            mIOThread = null;
-        }
+        closeRunningThreads();
         setState(ConnectionState.NONE);
     }
 
@@ -115,14 +108,7 @@ public class BluetoothSerial {
     public synchronized void connect(BluetoothDevice device) {
         if (D) Log.d(TAG, "connect to: " + device);
         // Cancel any thread attempting to make a connection
-        if (mConnectThread != null) {
-            mConnectThread.cancel();
-            mConnectThread = null;
-        }
-        if (mIOThread != null) {
-            mIOThread.cancel();
-            mIOThread = null;
-        }
+        closeRunningThreads();
         // Start the thread to connect with the given device
         mConnectThread = new ConnectThread(device);
         mConnectThread.start();
@@ -136,14 +122,7 @@ public class BluetoothSerial {
      */
     public synchronized void startIOThread(BluetoothSocket socket, final String socketType) {
         if (D) Log.d(TAG, "connected, Socket Type:" + socketType);
-        if (mConnectThread != null) {
-            mConnectThread.cancel();
-            mConnectThread = null;
-        }
-        if (mIOThread != null) {
-            mIOThread.cancel();
-            mIOThread = null;
-        }
+        closeRunningThreads();
         // Start the thread to manage the connection and perform transmissions
         mIOThread = new IOThread(socket, socketType);
         mIOThread.start();
@@ -355,6 +334,17 @@ public class BluetoothSerial {
         bundle.putString("data", data);
         message.setData(bundle);
         message.sendToTarget();
+    }
+
+    private void closeRunningThreads() {
+        if (mConnectThread != null) {
+            mConnectThread.cancel();
+            mConnectThread = null;
+        }
+        if (mIOThread != null) {
+            mIOThread.cancel();
+            mIOThread = null;
+        }
     }
 
 }
