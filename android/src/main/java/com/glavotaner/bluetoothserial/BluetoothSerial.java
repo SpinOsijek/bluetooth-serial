@@ -146,7 +146,6 @@ public class BluetoothSerial {
      */
     private synchronized void startIOThread(BluetoothSocket socket, final String socketType) {
         if (D) Log.d(TAG, "connected, Socket Type:" + socketType);
-        closeRunningThreads();
         // Start the thread to manage the connection and perform transmissions
         mIOThread = new IOThread(socket, socketType);
         mIOThread.start();
