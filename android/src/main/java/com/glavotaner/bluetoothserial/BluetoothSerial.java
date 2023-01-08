@@ -76,6 +76,10 @@ public class BluetoothSerial {
         mAdapter.cancelDiscovery();
     }
 
+    public boolean isConnected() {
+        return mState == ConnectionState.CONNECTED;
+    }
+
     /**
      * Set the current state of the chat connection
      *
@@ -85,13 +89,6 @@ public class BluetoothSerial {
         if (D) Log.d(TAG, "setState() " + mState + " -> " + state);
         mState = state;
         sendStateToPlugin(state);
-    }
-
-    /**
-     * Return the current connection state.
-     */
-    public synchronized ConnectionState getState() {
-        return mState;
     }
 
     public synchronized void resetService() {
@@ -131,12 +128,17 @@ public class BluetoothSerial {
      *
      */
     private synchronized void connect(BluetoothSocket socket, String socketType) {
-        // Cancel any thread attempting to make a connection
-        closeRunningThreads();
-        // Start the thread to connect with the given device
-        mConnectThread = new ConnectThread(socket, socketType);
-        mConnectThread.start();
-        setState(ConnectionState.CONNECTING);
+        if (socket != null) {
+            // Cancel any thread attempting to make a connection
+            closeRunningThreads();
+            // Start the thread to connect with the given device
+            mConnectThread = new ConnectThread(socket, socketType);
+            mConnectThread.start();
+            setState(ConnectionState.CONNECTING);
+        } else {
+            resetConnectThread();
+            setState(ConnectionState.NONE);
+        }
     }
 
     /**
@@ -167,22 +169,19 @@ public class BluetoothSerial {
      * @see IOThread#write(byte[])
      */
     public void write(byte[] out) {
-        // Create temporary object
-        IOThread r;
-        // Synchronize a copy of the ConnectedThread
-        synchronized (this) {
-            if (mState != ConnectionState.CONNECTED) {
-                Message message = writeHandler.obtainMessage(ERROR);
-                Bundle bundle = new Bundle();
-                bundle.putString("error", "Not connected");
-                message.setData(bundle);
-                message.sendToTarget();
-                return;
-            }
-            r = mIOThread;
+        if (isConnected()) {
+            // Create temporary object
+            IOThread r;
+            // Synchronize a copy of the ConnectedThread
+            synchronized (this) { r = mIOThread; }
+            r.write(out);
+        } else {
+            Message message = writeHandler.obtainMessage(ERROR);
+            Bundle bundle = new Bundle();
+            bundle.putString("error", "Not connected");
+            message.setData(bundle);
+            message.sendToTarget();
         }
-        // Perform the write unsynchronized
-        r.write(out);
     }
 
     private void sendStateToPlugin(ConnectionState state) {
@@ -212,20 +211,14 @@ public class BluetoothSerial {
         }
 
         public void run() {
-            // could not connect
-            if (mmSocket == null) {
-                resetConnectThread();
-                setState(ConnectionState.NONE);
-            } else {
-                Log.i(TAG, "BEGIN mConnectThread SocketType:" + mSocketType);
-                setName("ConnectThread" + mSocketType);
-                // Always cancel discovery because it will slow down a connection
-                cancelDiscovery();
-                connectToSocket();
-                // Reset the ConnectThread because we're done
-                resetConnectThread();
-                startIOThread(mmSocket, mSocketType);
-            }
+            Log.i(TAG, "BEGIN mConnectThread SocketType:" + mSocketType);
+            setName("ConnectThread" + mSocketType);
+            // Always cancel discovery because it will slow down a connection
+            cancelDiscovery();
+            connectToSocket();
+            // Reset the ConnectThread because we're done
+            resetConnectThread();
+            startIOThread(mmSocket, mSocketType);
         }
 
         // connect

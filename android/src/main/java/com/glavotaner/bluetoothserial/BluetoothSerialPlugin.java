@@ -180,9 +180,7 @@ public class BluetoothSerialPlugin extends Plugin {
 
     @PluginMethod
     public void isConnected(@NonNull PluginCall call) {
-        ConnectionState bluetoothState = implementation.getState();
-        JSObject result = new JSObject()
-                .put("isConnected", bluetoothState == ConnectionState.CONNECTED);
+        JSObject result = new JSObject().put("isConnected", implementation.isConnected());
         call.resolve(result);
     }
 
