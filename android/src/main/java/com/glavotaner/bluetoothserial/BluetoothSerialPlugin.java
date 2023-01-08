@@ -111,16 +111,25 @@ public class BluetoothSerialPlugin extends Plugin {
     }
 
     @PluginMethod
-    public void connect(PluginCall call) {
+    public void connect(@NonNull PluginCall call) {
+        connect(call, device -> implementation.connect(device));
+    }
+
+    @PluginMethod
+    public void connectInsecure(@NonNull PluginCall call) {
+        connect(call, device -> implementation.connectInsecure(device));
+    }
+    
+    private void connect(@NonNull PluginCall call, Connector connector) {
         if (rejectIfBluetoothDisabled(call)) return;
         if (hasCompatPermission(CONNECT)) {
-            connectToDevice(call);
+            connectToDevice(call, connector);
         } else {
             requestPermissionForAlias(CONNECT, call, "connectPermissionCallback");
         }
     }
 
-    private void connectToDevice(@NonNull PluginCall call) {
+    private void connectToDevice(@NonNull PluginCall call, Connector connector) {
         String macAddress = call.getString("address");
         BluetoothDevice device;
         try {
@@ -131,12 +140,7 @@ public class BluetoothSerialPlugin extends Plugin {
         }
         if (device != null) {
             connectCall = call;
-            boolean secureConnection = Boolean.TRUE.equals(call.getBoolean("secure"));
-            if (secureConnection) {
-                implementation.connect(device);
-            } else {
-                implementation.connectInsecure(device);
-            }
+            connector.connect(device);
             buffer.setLength(0);
         } else {
             call.reject("Could not connect to " + macAddress);
@@ -387,7 +391,8 @@ public class BluetoothSerialPlugin extends Plugin {
             switch(call.getMethodName()) {
                 case "enable": enableBluetooth(call); break;
                 case "list": listPairedDevices(call); break;
-                case "connect": connectToDevice(call); break;
+                case "connect": connect(call); break;
+                case "connectInsecure": connectInsecure(call); break;
             }
         } else {
             call.reject("Connect permission denied");
@@ -430,6 +435,10 @@ public class BluetoothSerialPlugin extends Plugin {
         if (implementation != null) {
             implementation.resetService();
         }
+    }
+
+    private interface Connector {
+        void connect(BluetoothDevice device);
     }
 
 }

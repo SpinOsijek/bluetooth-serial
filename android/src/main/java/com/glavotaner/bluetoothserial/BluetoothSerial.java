@@ -101,24 +101,22 @@ public class BluetoothSerial {
     @SuppressLint("MissingPermission")
     public synchronized void connect(BluetoothDevice device) {
         if (D) Log.d(TAG, "connect to: " + device);
-        try {
-            BluetoothSocket secureSocket = device.createRfcommSocketToServiceRecord(UUID_SPP);
-            connect(secureSocket, "secure");
-        } catch (IOException e) {
-            Log.e(TAG, "Socket Type: secure create() failed", e);
-            sendConnectionErrorToPlugin(e.getMessage());
-        }
+        connectToSocketOfType("secure", () -> device.createRfcommSocketToServiceRecord(UUID_SPP));
     }
 
     // connect
     @SuppressLint("MissingPermission")
     public synchronized void connectInsecure(BluetoothDevice device) {
         if (D) Log.d(TAG, "connect to: " + device);
+        connectToSocketOfType("insecure", () -> device.createInsecureRfcommSocketToServiceRecord(UUID_SPP));
+    }
+
+    private void connectToSocketOfType(String socketType, SocketCreator socketCreator) {
         try {
-            BluetoothSocket insecureSocket = device.createInsecureRfcommSocketToServiceRecord(UUID_SPP);
-            connect(insecureSocket, "insecure");
+            BluetoothSocket socket = socketCreator.create();
+            connect(socket, socketType);
         } catch (IOException e) {
-            Log.e(TAG, "Socket Type: insecure create() failed", e);
+            Log.e(TAG, "Socket Type: "+ socketType +" create() failed", e);
             sendConnectionErrorToPlugin(e.getMessage());
         }
     }
@@ -349,6 +347,10 @@ public class BluetoothSerial {
             mIOThread.cancel();
             mIOThread = null;
         }
+    }
+
+    private interface SocketCreator {
+        BluetoothSocket create() throws IOException;
     }
 
 }
