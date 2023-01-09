@@ -125,7 +125,7 @@ public class BluetoothSerialPlugin extends Plugin {
         if (hasCompatPermission(CONNECT)) {
             connectToDevice(call, connector);
         } else {
-            requestPermissionForAlias(CONNECT, call, "connectPermissionCallback");
+            requestConnectPermission(call);
         }
     }
 
@@ -141,6 +141,7 @@ public class BluetoothSerialPlugin extends Plugin {
         if (device != null) {
             cancelDiscovery();
             connectCall = call;
+            cancelDiscovery();
             connector.connect(device);
             buffer.setLength(0);
         } else {
@@ -207,7 +208,7 @@ public class BluetoothSerialPlugin extends Plugin {
         if (hasCompatPermission(CONNECT)) {
             enableBluetooth(call);
         } else {
-            requestPermissionForAlias(CONNECT, call, "connectPermissionCallback");
+            requestConnectPermission(call);
         }
     }
 
@@ -230,7 +231,7 @@ public class BluetoothSerialPlugin extends Plugin {
         if (hasCompatPermission(CONNECT)) {
             listPairedDevices(call);
         } else {
-            requestPermissionForAlias(CONNECT, call, "connectPermissionCallback");
+            requestConnectPermission(call);
         }
     }
 
@@ -251,7 +252,7 @@ public class BluetoothSerialPlugin extends Plugin {
         if (hasCompatPermission(SCAN)) {
             startDiscovery(call);
         } else {
-            requestPermissionForAlias(SCAN, call, "scanPermissionCallback");
+            requestScanPermission(call);
         }
     }
 
@@ -261,7 +262,7 @@ public class BluetoothSerialPlugin extends Plugin {
             cancelDiscovery();
             call.resolve();
         } else {
-            requestPermissionForAlias(SCAN, call, "scanPermissionCallback");
+            requestScanPermission(call);
         }
     }
 
@@ -413,13 +414,9 @@ public class BluetoothSerialPlugin extends Plugin {
     }
 
     // This is called only for permissions that may not exist on older Android versions,
-    // otherwise getPermissionState(alias) is used,
+    // otherwise getPermissionState(alias) is used
     private boolean hasCompatPermission(String alias) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            return getPermissionState(alias) == PermissionState.GRANTED;
-        } else {
-            return true;
-        }
+        return Build.VERSION.SDK_INT < Build.VERSION_CODES.R || getPermissionState(alias) == PermissionState.GRANTED;
     }
 
     private boolean rejectIfBluetoothDisabled(PluginCall call) {
@@ -428,6 +425,14 @@ public class BluetoothSerialPlugin extends Plugin {
             call.reject("Bluetooth is not enabled");
         }
         return !isEnabled;
+    }
+
+    private void requestConnectPermission(PluginCall call) {
+        requestPermissionForAlias(CONNECT, call, "connectPermissionCallback");
+    }
+
+    private void requestScanPermission(PluginCall call) {
+        requestPermissionForAlias(SCAN, call, "scanPermissionCallback");
     }
 
     @Override

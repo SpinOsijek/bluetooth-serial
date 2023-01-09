@@ -119,7 +119,7 @@ public class BluetoothSerial {
             else sendConnectionErrorToPlugin("Could not create socket");
         } catch (IOException e) {
             Log.e(TAG, "Socket Type: "+ socketType +" create() failed", e);
-            sendConnectionErrorToPlugin(e.getMessage());
+            handleConnectionError(e.getMessage());
         }
     }
 
@@ -148,10 +148,7 @@ public class BluetoothSerial {
     }
 
     private void sendConnectionErrorToPlugin(String error) {
-        ConnectionState disconnected = ConnectionState.NONE;
-        setState(disconnected);
         Bundle bundle = new Bundle();
-        bundle.putInt("state", disconnected.value());
         bundle.putString("error", error);
         sendConnectionStateToPlugin(ERROR, bundle);
     }
@@ -258,7 +255,7 @@ public class BluetoothSerial {
                 setState(ConnectionState.CONNECTED);
             } catch (IOException e) {
                 Log.e(TAG, "temp sockets not created", e);
-                handleConnectionError(e.getMessage());
+                handleConnectionError("Could not create sockets");
             }
             mmInStream = tmpIn;
             mmOutStream = tmpOut;
