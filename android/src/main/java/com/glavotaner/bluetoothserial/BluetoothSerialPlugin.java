@@ -139,6 +139,7 @@ public class BluetoothSerialPlugin extends Plugin {
             return;
         }
         if (device != null) {
+            cancelDiscovery();
             connectCall = call;
             connector.connect(device);
             buffer.setLength(0);
