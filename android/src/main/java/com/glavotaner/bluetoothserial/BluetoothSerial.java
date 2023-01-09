@@ -117,7 +117,7 @@ public class BluetoothSerial {
             connect(socket, socketType);
         } catch (IOException e) {
             Log.e(TAG, "Socket Type: "+ socketType +" create() failed", e);
-            sendConnectionErrorToPlugin(e.getMessage());
+            handleConnectionError(e.getMessage());
         }
     }
 
@@ -152,10 +152,7 @@ public class BluetoothSerial {
     }
 
     private void sendConnectionErrorToPlugin(String error) {
-        ConnectionState disconnected = ConnectionState.NONE;
-        setState(disconnected);
         Bundle bundle = new Bundle();
-        bundle.putInt("state", disconnected.value());
         bundle.putString("error", error);
         sendConnectionStateToPlugin(ERROR, bundle);
     }
@@ -208,20 +205,11 @@ public class BluetoothSerial {
             mSocketType = socketType;
         }
 
+        // connect
+        @SuppressLint("MissingPermission")
         public void run() {
             Log.i(TAG, "BEGIN mConnectThread SocketType:" + mSocketType);
             setName("ConnectThread" + mSocketType);
-            // Always cancel discovery because it will slow down a connection
-            cancelDiscovery();
-            connectToSocket();
-            // Reset the ConnectThread because we're done
-            resetConnectThread();
-            startIOThread(mmSocket, mSocketType);
-        }
-
-        // connect
-        @SuppressLint("MissingPermission")
-        private void connectToSocket() {
             try {
                 mmSocket.connect();
                 Log.i(TAG, "Connected");
@@ -229,7 +217,11 @@ public class BluetoothSerial {
                 Log.e(TAG, e.toString());
                 sendConnectionErrorToPlugin(e.getMessage());
                 BluetoothSerial.this.resetService();
+                return;
             }
+            // Reset the ConnectThread because we're done
+            resetConnectThread();
+            startIOThread(mmSocket, mSocketType);
         }
 
         public void cancel() {
@@ -268,8 +260,7 @@ public class BluetoothSerial {
                 setState(ConnectionState.CONNECTED);
             } catch (IOException e) {
                 Log.e(TAG, "temp sockets not created", e);
-                sendConnectionErrorToPlugin(e.getMessage());
-                BluetoothSerial.this.resetService();
+                handleConnectionError("Could not create sockets");
             }
             mmInStream = tmpIn;
             mmOutStream = tmpOut;
@@ -288,8 +279,7 @@ public class BluetoothSerial {
                     sendReadData(data);
                 } catch (IOException e) {
                     Log.e(TAG, "disconnected", e);
-                    sendConnectionErrorToPlugin("Device connection was lost");
-                    BluetoothSerial.this.resetService();
+                    handleConnectionError("Device connection was lost");
                     break;
                 }
             }
@@ -347,6 +337,11 @@ public class BluetoothSerial {
             mIOThread.cancel();
             mIOThread = null;
         }
+    }
+
+    private void handleConnectionError(String message) {
+        sendConnectionErrorToPlugin(message);
+        BluetoothSerial.this.resetService();
     }
 
     private interface SocketCreator {
