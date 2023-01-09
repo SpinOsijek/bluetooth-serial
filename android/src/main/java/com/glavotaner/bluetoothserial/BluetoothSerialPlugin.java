@@ -125,7 +125,7 @@ public class BluetoothSerialPlugin extends Plugin {
         if (hasCompatPermission(CONNECT)) {
             connectToDevice(call, connector);
         } else {
-            requestPermissionForAlias(CONNECT, call, "connectPermissionCallback");
+            requestConnectPermission(call);
         }
     }
 
@@ -206,7 +206,7 @@ public class BluetoothSerialPlugin extends Plugin {
         if (hasCompatPermission(CONNECT)) {
             enableBluetooth(call);
         } else {
-            requestPermissionForAlias(CONNECT, call, "connectPermissionCallback");
+            requestConnectPermission(call);
         }
     }
 
@@ -229,7 +229,7 @@ public class BluetoothSerialPlugin extends Plugin {
         if (hasCompatPermission(CONNECT)) {
             listPairedDevices(call);
         } else {
-            requestPermissionForAlias(CONNECT, call, "connectPermissionCallback");
+            requestConnectPermission(call);
         }
     }
 
@@ -250,7 +250,7 @@ public class BluetoothSerialPlugin extends Plugin {
         if (hasCompatPermission(SCAN)) {
             startDiscovery(call);
         } else {
-            requestPermissionForAlias(SCAN, call, "scanPermissionCallback");
+            requestScanPermission(call);
         }
     }
 
@@ -260,7 +260,7 @@ public class BluetoothSerialPlugin extends Plugin {
             cancelDiscovery();
             call.resolve();
         } else {
-            requestPermissionForAlias(SCAN, call, "scanPermissionCallback");
+            requestScanPermission(call);
         }
     }
 
@@ -427,6 +427,14 @@ public class BluetoothSerialPlugin extends Plugin {
             call.reject("Bluetooth is not enabled");
         }
         return !isEnabled;
+    }
+
+    private void requestConnectPermission(PluginCall call) {
+        requestPermissionForAlias(CONNECT, call, "connectPermissionCallback");
+    }
+
+    private void requestScanPermission(PluginCall call) {
+        requestPermissionForAlias(SCAN, call, "scanPermissionCallback");
     }
 
     @Override
