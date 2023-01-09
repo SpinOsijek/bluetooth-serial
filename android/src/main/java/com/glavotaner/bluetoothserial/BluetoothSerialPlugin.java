@@ -412,13 +412,9 @@ public class BluetoothSerialPlugin extends Plugin {
     }
 
     // This is called only for permissions that may not exist on older Android versions,
-    // otherwise getPermissionState(alias) is used,
+    // otherwise getPermissionState(alias) is used
     private boolean hasCompatPermission(String alias) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            return getPermissionState(alias) == PermissionState.GRANTED;
-        } else {
-            return true;
-        }
+        return Build.VERSION.SDK_INT < Build.VERSION_CODES.R || getPermissionState(alias) == PermissionState.GRANTED;
     }
 
     private boolean rejectIfBluetoothDisabled(PluginCall call) {
