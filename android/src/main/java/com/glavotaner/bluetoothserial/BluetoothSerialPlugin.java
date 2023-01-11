@@ -218,10 +218,6 @@ public class BluetoothSerialPlugin extends Plugin {
 
     @PluginMethod
     public void enable(PluginCall call) {
-        if (implementation.isEnabled()) {
-            call.resolve(new JSObject().put("isEnabled", true));
-            return;
-        }
         if (hasCompatPermission(CONNECT)) {
             enableBluetooth(call);
         } else {
