@@ -66,6 +66,7 @@ connect(options: connectionOptions) => Promise<void>
 Connects to the bluetooth device with the given address.
 The plugin only retains one connection at a time; upon connecting to a device, while there is already an existing connection,
 the previous device is disconnected.
+Requires CONNECT permission on Android API &gt;= 30
 
 | Param         | Type                                                            |
 | ------------- | --------------------------------------------------------------- |
@@ -83,6 +84,7 @@ connectInsecure(options: connectionOptions) => Promise<void>
 Connects to the bluetooth device with the given address.
 The plugin only retains one connection at a time; upon connecting to a device, while there is already an existing connection,
 the previous device is disconnected.
+Requires CONNECT permission on Android API &gt;= 30
 
 | Param         | Type                                                            |
 | ------------- | --------------------------------------------------------------- |
@@ -188,6 +190,7 @@ enable() => Promise<{ isEnabled: boolean; }>
 ```
 
 Displays the native prompt for enabling bluetooth. Returns true or false depending on whether the user enabled bluetooth.
+Requires CONNECT permission on Android API &gt;= 30
 
 **Returns:** <code>Promise&lt;{ isEnabled: boolean; }&gt;</code>
 
@@ -212,6 +215,7 @@ list() => Promise<devices>
 ```
 
 Returns a list of bonded <a href="#devices">devices</a>. This includes <a href="#devices">devices</a> that were previously paired with the user's device
+Requires CONNECT permission on Android API &gt;= 30
 
 **Returns:** <code>Promise&lt;<a href="#devices">devices</a>&gt;</code>
 
@@ -226,6 +230,9 @@ discoverUnpaired() => Promise<devices>
 
 Begins the discovery of nearby <a href="#devices">devices</a> and resolves with them once discovery is finished.
 There may only be one discovery process at a time.
+On Android API &gt;= 30 requires SCAN and FINE_LOCATION <a href="#permissions">permissions</a>.
+You can declare in your manifest that scanning for <a href="#devices">devices</a> is not used to derive the user's location. In that case, you may also
+add the following into your capacitor.config.ts to indicate that the plugin should not require FINE_LOCATION:
 
 **Returns:** <code>Promise&lt;<a href="#devices">devices</a>&gt;</code>
 
@@ -240,6 +247,7 @@ cancelDiscovery() => Promise<void>
 
 Cancels current unpaired <a href="#devices">devices</a> discovery, if there is one in progress. If there is no discovery in progress, resolves with void.
 Be sure to note that calling this will reject any existing discoverUnpaired() call which hasn't resolved yet.
+Requires SCAN permission on Android API &gt;= 30
 
 --------------------
 
@@ -322,11 +330,11 @@ removeAllListeners() => Promise<void>
 
 #### BluetoothDevice
 
-| Prop          | Type                |
-| ------------- | ------------------- |
-| **`address`** | <code>string</code> |
-| **`name`**    | <code>string</code> |
-| **`class`**   | <code>number</code> |
+| Prop              | Type                |
+| ----------------- | ------------------- |
+| **`address`**     | <code>string</code> |
+| **`name`**        | <code>string</code> |
+| **`deviceClass`** | <code>number</code> |
 
 
 #### PluginListenerHandle
@@ -356,7 +364,7 @@ removeAllListeners() => Promise<void>
 
 #### permissions
 
-<code>'location' | 'scan' | 'connect'</code>
+<code>'coarseLocation' | 'fineLocation' | 'scan' | 'connect'</code>
 
 
 #### PermissionState
