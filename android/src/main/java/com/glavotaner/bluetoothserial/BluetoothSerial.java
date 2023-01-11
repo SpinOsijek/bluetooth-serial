@@ -91,6 +91,12 @@ public class BluetoothSerial {
         sendStateToPlugin(state);
     }
 
+    private void sendStateToPlugin(ConnectionState state) {
+        Bundle bundle = new Bundle();
+        bundle.putInt("state", state.value());
+        sendConnectionStateToPlugin(SUCCESS, bundle);
+    }
+
     public synchronized void resetService() {
         if (D) Log.d(TAG, "start");
         closeRunningThreads();
@@ -123,6 +129,12 @@ public class BluetoothSerial {
         }
     }
 
+    private void sendConnectionErrorToPlugin(String error) {
+        Bundle bundle = new Bundle();
+        bundle.putString("error", error);
+        sendConnectionStateToPlugin(ERROR, bundle);
+    }
+
     /**
      * Start the ConnectThread to initiate a connection to a remote device.
      *
@@ -136,32 +148,13 @@ public class BluetoothSerial {
     }
 
     /**
-     * Start the ConnectedThread to begin managing a Bluetooth connection
-     *
-     * @param socket The BluetoothSocket on which the connection was made
-     */
-    private synchronized void startIOThread(BluetoothSocket socket, final String socketType) {
-        if (D) Log.d(TAG, "connected, Socket Type:" + socketType);
-        // Start the thread to manage the connection and perform transmissions
-        mIOThread = new IOThread(socket, socketType);
-        mIOThread.start();
-    }
-
-    private void sendConnectionErrorToPlugin(String error) {
-        Bundle bundle = new Bundle();
-        bundle.putString("error", error);
-        sendConnectionStateToPlugin(ERROR, bundle);
-    }
-
-    /**
-     * Write to the ConnectedThread in an unsynchronized manner
+     * Write to the IOThread in an unsynchronized manner
      *
      * @param out The bytes to write
      * @see IOThread#write(byte[])
      */
     public void write(byte[] out) {
         if (isConnected()) {
-            // Create temporary object
             IOThread r;
             // Synchronize a copy of the ConnectedThread
             synchronized (this) { r = mIOThread; }
@@ -173,12 +166,6 @@ public class BluetoothSerial {
             message.setData(bundle);
             message.sendToTarget();
         }
-    }
-
-    private void sendStateToPlugin(ConnectionState state) {
-        Bundle bundle = new Bundle();
-        bundle.putInt("state", state.value());
-        sendConnectionStateToPlugin(SUCCESS, bundle);
     }
 
     private void sendConnectionStateToPlugin(int status, Bundle bundle) {
@@ -215,8 +202,20 @@ public class BluetoothSerial {
                 return;
             }
             // Reset the ConnectThread because we're done
-            resetConnectThread();
-            startIOThread(mmSocket, mSocketType);
+            synchronized (BluetoothSerial.this) { mConnectThread = null; }
+            startIOThread();
+        }
+
+        /**
+         * Start the IOThread to begin managing a Bluetooth connection
+         */
+        private void startIOThread() {
+            synchronized (BluetoothSerial.this) {
+                if (D) Log.d(TAG, "connected, Socket Type:" + mSocketType);
+                // Start the thread to manage the connection and perform transmissions
+                mIOThread = new IOThread(mmSocket, mSocketType);
+                mIOThread.start();
+            }
         }
 
         public void cancel() {
@@ -225,12 +224,6 @@ public class BluetoothSerial {
             } catch (IOException e) {
                 Log.e(TAG, "close() of connect " + mSocketType + " socket failed", e);
             }
-        }
-    }
-
-    private void resetConnectThread() {
-        synchronized (BluetoothSerial.this) {
-            mConnectThread = null;
         }
     }
 
@@ -264,18 +257,15 @@ public class BluetoothSerial {
         public void run() {
             Log.i(TAG, "BEGIN mConnectedThread");
             byte[] buffer = new byte[1024];
-
-            // Keep listening to the InputStream while connected
-            while (true) {
+            boolean connected = true;
+            while (connected) {
                 try {
-                    // Read from the InputStream
                     String data = getBufferData(buffer);
-                    // Send the new data String to the UI Activity
-                    sendReadData(data);
+                    sendToPlugin(data);
                 } catch (IOException e) {
+                    connected = false;
                     Log.e(TAG, "disconnected", e);
                     handleConnectionError("Device connection was lost");
-                    break;
                 }
             }
         }
@@ -313,14 +303,14 @@ public class BluetoothSerial {
                 Log.e(TAG, "close() of connect socket failed", e);
             }
         }
-    }
 
-    private void sendReadData(String data) {
-        Message message = readHandler.obtainMessage(SUCCESS);
-        Bundle bundle = new Bundle();
-        bundle.putString("data", data);
-        message.setData(bundle);
-        message.sendToTarget();
+        private void sendToPlugin(String data) {
+            Message message = readHandler.obtainMessage(SUCCESS);
+            Bundle bundle = new Bundle();
+            bundle.putString("data", data);
+            message.setData(bundle);
+            message.sendToTarget();
+        }
     }
 
     private void closeRunningThreads() {
