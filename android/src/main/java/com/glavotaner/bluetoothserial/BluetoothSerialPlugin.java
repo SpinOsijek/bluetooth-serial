@@ -26,7 +26,6 @@ import com.getcapacitor.JSObject;
 import com.getcapacitor.PermissionState;
 import com.getcapacitor.Plugin;
 import com.getcapacitor.PluginCall;
-import com.getcapacitor.PluginConfig;
 import com.getcapacitor.PluginMethod;
 import com.getcapacitor.annotation.ActivityCallback;
 import com.getcapacitor.annotation.CapacitorPlugin;
@@ -63,7 +62,6 @@ public class BluetoothSerialPlugin extends Plugin {
     private PluginCall writeCall;
     private PluginCall discoveryCall;
     private BroadcastReceiver discoveryReceiver;
-    private final String requiredLegacyLocationPermission = Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q ? FINE_LOCATION : COARSE_LOCATION;
     private final List<String> discoveryPermissions = new ArrayList<>();
 
     StringBuffer buffer = new StringBuffer();
@@ -111,9 +109,13 @@ public class BluetoothSerialPlugin extends Plugin {
     }
 
     private void setDiscoveryPermissions() {
-        discoveryPermissions.add(SCAN);
-        if (!getConfig().getBoolean("neverScanForLocation", false)) {
-            discoveryPermissions.add(FINE_LOCATION);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            discoveryPermissions.add(SCAN);
+            if (!getConfig().getBoolean("neverScanForLocation", false)) {
+                discoveryPermissions.add(FINE_LOCATION);
+            }
+        } else {
+         discoveryPermissions.add(Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q ? FINE_LOCATION : COARSE_LOCATION);
         }
     }
 
@@ -262,22 +264,25 @@ public class BluetoothSerialPlugin extends Plugin {
     @PluginMethod
     public void discoverUnpaired(PluginCall call) {
         if (rejectIfBluetoothDisabled(call)) return;
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            startDiscoveryWithScanPermissions(call);
+        if (hasDiscoveryPermissions()) {
+            startDiscovery(call);
         } else {
-            startDiscoveryWithLocationPermission(call);
+            requestDiscoveryPermissions(call);
         }
     }
 
-    private void startDiscoveryWithScanPermissions(PluginCall call) {
+    private boolean hasDiscoveryPermissions() {
         for (String alias: discoveryPermissions) {
             if (getPermissionState(alias) != PermissionState.GRANTED) {
-                String[] requiredPermissions = discoveryPermissions.toArray(new String[0]);
-                requestPermissionForAliases(requiredPermissions, call, "discoveryPermissionsCallback");
-                return;
+                return false;
             }
         }
-        startDiscovery(call);
+        return true;
+    }
+
+    private void requestDiscoveryPermissions(PluginCall call) {
+        String[] requiredPermissions = discoveryPermissions.toArray(new String[0]);
+        requestPermissionForAliases(requiredPermissions, call, "discoveryPermissionsCallback");
     }
 
     @PermissionCallback
@@ -289,23 +294,6 @@ public class BluetoothSerialPlugin extends Plugin {
             }
         }
         startDiscovery(call);
-    }
-
-    private void startDiscoveryWithLocationPermission(PluginCall call) {
-        if (getPermissionState(requiredLegacyLocationPermission) == PermissionState.GRANTED) {
-            startDiscovery(call);
-        } else {
-            requestPermissionForAlias(requiredLegacyLocationPermission, call, "discoverLegacyPermissionCallback");
-        }
-    }
-
-    @PermissionCallback
-    private void discoverLegacyPermissionCallback(PluginCall call) {
-        if (getPermissionState(requiredLegacyLocationPermission) == PermissionState.GRANTED) {
-            startDiscovery(call);
-        } else {
-          call.reject("Location permission denied");
-        }
     }
 
     @PluginMethod
