@@ -135,18 +135,6 @@ public class BluetoothSerial {
         mConnectThread.start();
     }
 
-    /**
-     * Start the ConnectedThread to begin managing a Bluetooth connection
-     *
-     * @param socket The BluetoothSocket on which the connection was made
-     */
-    private synchronized void startIOThread(BluetoothSocket socket, final String socketType) {
-        if (D) Log.d(TAG, "connected, Socket Type:" + socketType);
-        // Start the thread to manage the connection and perform transmissions
-        mIOThread = new IOThread(socket, socketType);
-        mIOThread.start();
-    }
-
     private void sendConnectionErrorToPlugin(String error) {
         Bundle bundle = new Bundle();
         bundle.putString("error", error);
@@ -185,6 +173,30 @@ public class BluetoothSerial {
         Message message = connectionHandler.obtainMessage(status);
         message.setData(bundle);
         message.sendToTarget();
+    }
+
+    private void sendReadData(String data) {
+        Message message = readHandler.obtainMessage(SUCCESS);
+        Bundle bundle = new Bundle();
+        bundle.putString("data", data);
+        message.setData(bundle);
+        message.sendToTarget();
+    }
+
+    private void closeRunningThreads() {
+        if (mConnectThread != null) {
+            mConnectThread.cancel();
+            mConnectThread = null;
+        }
+        if (mIOThread != null) {
+            mIOThread.cancel();
+            mIOThread = null;
+        }
+    }
+
+    private void handleConnectionError(String message) {
+        sendConnectionErrorToPlugin(message);
+        BluetoothSerial.this.resetService();
     }
 
     /**
@@ -226,6 +238,19 @@ public class BluetoothSerial {
                 Log.e(TAG, "close() of connect " + mSocketType + " socket failed", e);
             }
         }
+
+    }
+
+    /**
+     * Start the ConnectedThread to begin managing a Bluetooth connection
+     *
+     * @param socket The BluetoothSocket on which the connection was made
+     */
+    private synchronized void startIOThread(BluetoothSocket socket, final String socketType) {
+        if (D) Log.d(TAG, "connected, Socket Type:" + socketType);
+        // Start the thread to manage the connection and perform transmissions
+        mIOThread = new IOThread(socket, socketType);
+        mIOThread.start();
     }
 
     private void resetConnectThread() {
@@ -313,30 +338,6 @@ public class BluetoothSerial {
                 Log.e(TAG, "close() of connect socket failed", e);
             }
         }
-    }
-
-    private void sendReadData(String data) {
-        Message message = readHandler.obtainMessage(SUCCESS);
-        Bundle bundle = new Bundle();
-        bundle.putString("data", data);
-        message.setData(bundle);
-        message.sendToTarget();
-    }
-
-    private void closeRunningThreads() {
-        if (mConnectThread != null) {
-            mConnectThread.cancel();
-            mConnectThread = null;
-        }
-        if (mIOThread != null) {
-            mIOThread.cancel();
-            mIOThread = null;
-        }
-    }
-
-    private void handleConnectionError(String message) {
-        sendConnectionErrorToPlugin(message);
-        BluetoothSerial.this.resetService();
     }
 
     private interface SocketCreator {
