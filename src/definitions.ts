@@ -86,10 +86,10 @@ export interface BluetoothDevice {
   address: string;
   name?: string;
   // you may use this property to conclude what sort of device the connected device is
-  class?: number;
+  deviceClass?: number;
 }
 
-export type permissions = 'location' | 'scan' | 'connect';
+export type permissions = 'coarseLocation' | 'fineLocation' | 'scan' | 'connect';
 export type PermissionStatus = { [permission in permissions]?: PermissionState };
 export type devices = { devices: BluetoothDevice[] };
 export enum ConnectionState {
