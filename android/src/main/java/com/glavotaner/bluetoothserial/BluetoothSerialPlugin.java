@@ -462,11 +462,11 @@ public class BluetoothSerialPlugin extends Plugin {
     }
 
     private boolean rejectIfBluetoothDisabled(PluginCall call) {
-        boolean isEnabled = implementation.isEnabled();
-        if (!isEnabled) {
+        boolean disabled = !implementation.isEnabled();
+        if (disabled) {
             call.reject("Bluetooth is not enabled");
         }
-        return !isEnabled;
+        return disabled;
     }
 
     private void requestConnectPermission(PluginCall call) {
