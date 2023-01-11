@@ -22,11 +22,11 @@ import android.util.Log;
 import androidx.activity.result.ActivityResult;
 import androidx.annotation.NonNull;
 
-import com.getcapacitor.JSArray;
 import com.getcapacitor.JSObject;
 import com.getcapacitor.PermissionState;
 import com.getcapacitor.Plugin;
 import com.getcapacitor.PluginCall;
+import com.getcapacitor.PluginConfig;
 import com.getcapacitor.PluginMethod;
 import com.getcapacitor.annotation.ActivityCallback;
 import com.getcapacitor.annotation.CapacitorPlugin;
@@ -37,13 +37,16 @@ import org.json.JSONArray;
 import org.json.JSONException;
 
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 
 @SuppressLint("InlinedApi")
 @CapacitorPlugin(name = "BluetoothSerial", permissions = {
         @Permission(strings = {Manifest.permission.BLUETOOTH_SCAN}, alias = BluetoothSerialPlugin.SCAN),
         @Permission(strings = {Manifest.permission.BLUETOOTH_CONNECT}, alias = BluetoothSerialPlugin.CONNECT),
-        @Permission(strings = {Manifest.permission.ACCESS_COARSE_LOCATION}, alias = BluetoothSerialPlugin.LOCATION)
+        @Permission(strings = {Manifest.permission.ACCESS_COARSE_LOCATION}, alias = BluetoothSerialPlugin.COARSE_LOCATION),
+        @Permission(strings = {Manifest.permission.ACCESS_FINE_LOCATION}, alias = BluetoothSerialPlugin.FINE_LOCATION)
 })
 public class BluetoothSerialPlugin extends Plugin {
 
@@ -52,19 +55,23 @@ public class BluetoothSerialPlugin extends Plugin {
 
     public static final String CONNECT = "connect";
     public static final String SCAN = "scan";
-    public static final String LOCATION = "location";
+    public static final String COARSE_LOCATION = "coarseLocation";
+    public static final String FINE_LOCATION = "fineLocation";
 
     private BluetoothSerial implementation;
     private PluginCall connectCall;
     private PluginCall writeCall;
     private PluginCall discoveryCall;
     private BroadcastReceiver discoveryReceiver;
+    private final String requiredLegacyLocationPermission = Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q ? FINE_LOCATION : COARSE_LOCATION;
+    private final List<String> discoveryPermissions = new ArrayList<>();
 
     StringBuffer buffer = new StringBuffer();
 
     @Override
     public void load() {
         super.load();
+        setDiscoveryPermissions();
         Looper looper = Looper.getMainLooper();
         Handler connectionHandler = new Handler(looper, message -> {
             Bundle data = message.getData();
@@ -101,6 +108,13 @@ public class BluetoothSerialPlugin extends Plugin {
             return false;
         });
         implementation = new BluetoothSerial(connectionHandler, writeHandler, readHandler);
+    }
+
+    private void setDiscoveryPermissions() {
+        discoveryPermissions.add(SCAN);
+        if (!getConfig().getBoolean("neverScanForLocation", false)) {
+            discoveryPermissions.add(FINE_LOCATION);
+        }
     }
 
     @PluginMethod
@@ -141,7 +155,6 @@ public class BluetoothSerialPlugin extends Plugin {
         if (device != null) {
             cancelDiscovery();
             connectCall = call;
-            cancelDiscovery();
             connector.connect(device);
             buffer.setLength(0);
         } else {
@@ -205,6 +218,10 @@ public class BluetoothSerialPlugin extends Plugin {
 
     @PluginMethod
     public void enable(PluginCall call) {
+        if (implementation.isEnabled()) {
+            call.resolve(new JSObject().put("isEnabled", true));
+            return;
+        }
         if (hasCompatPermission(CONNECT)) {
             enableBluetooth(call);
         } else {
@@ -236,23 +253,62 @@ public class BluetoothSerialPlugin extends Plugin {
     }
 
     private void listPairedDevices(PluginCall call) {
-        JSONArray deviceList = new JSONArray();
         @SuppressLint("MissingPermission")
         Set<BluetoothDevice> bondedDevices = implementation.getBondedDevices();
-        for (BluetoothDevice device : bondedDevices) {
-            deviceList.put(deviceToJSON(device));
+        JSONArray devices = new JSONArray();
+        for (BluetoothDevice device: bondedDevices) {
+            devices.put(deviceToJSON(device));
         }
-        JSObject result = new JSObject().put("devices", deviceList);
+        JSObject result = new JSObject().put("devices", devices);
         call.resolve(result);
     }
 
     @PluginMethod
     public void discoverUnpaired(PluginCall call) {
         if (rejectIfBluetoothDisabled(call)) return;
-        if (hasCompatPermission(SCAN)) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            startDiscoveryWithScanPermissions(call);
+        } else {
+            startDiscoveryWithLocationPermission(call);
+        }
+    }
+
+    private void startDiscoveryWithScanPermissions(PluginCall call) {
+        for (String alias: discoveryPermissions) {
+            if (getPermissionState(alias) != PermissionState.GRANTED) {
+                String[] requiredPermissions = discoveryPermissions.toArray(new String[0]);
+                requestPermissionForAliases(requiredPermissions, call, "discoveryPermissionsCallback");
+                return;
+            }
+        }
+        startDiscovery(call);
+    }
+
+    @PermissionCallback
+    private void discoveryPermissionsCallback(PluginCall call) {
+        for (String alias: discoveryPermissions) {
+            if (getPermissionState(alias) != PermissionState.GRANTED) {
+                call.reject(alias + " permission denied");
+                return;
+            }
+        }
+        startDiscovery(call);
+    }
+
+    private void startDiscoveryWithLocationPermission(PluginCall call) {
+        if (getPermissionState(requiredLegacyLocationPermission) == PermissionState.GRANTED) {
             startDiscovery(call);
         } else {
-            requestScanPermission(call);
+            requestPermissionForAlias(requiredLegacyLocationPermission, call, "discoverLegacyPermissionCallback");
+        }
+    }
+
+    @PermissionCallback
+    private void discoverLegacyPermissionCallback(PluginCall call) {
+        if (getPermissionState(requiredLegacyLocationPermission) == PermissionState.GRANTED) {
+            startDiscovery(call);
+        } else {
+          call.reject("Location permission denied");
         }
     }
 
@@ -262,7 +318,7 @@ public class BluetoothSerialPlugin extends Plugin {
             cancelDiscovery();
             call.resolve();
         } else {
-            requestScanPermission(call);
+            requestPermissionForAlias(SCAN, call, "scanPermissionCallback");
         }
     }
 
@@ -313,78 +369,7 @@ public class BluetoothSerialPlugin extends Plugin {
         return new JSObject()
                 .put("address", device.getAddress())
                 .put("name", device.getName())
-                .put("deviceClass", btClass != null ? btClass.getDeviceClass() : null);
-    }
-
-    @PluginMethod
-    @Override
-    public void checkPermissions(PluginCall call) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            super.checkPermissions(call);
-        } else {
-            checkCompatPermissions(call);
-        }
-    }
-
-    private void checkCompatPermissions(PluginCall call) {
-        call.resolve(new JSObject()
-                .put(LOCATION, getPermissionState(LOCATION))
-                .put(SCAN, PermissionState.GRANTED)
-                .put(CONNECT, PermissionState.GRANTED));
-    }
-
-    @PluginMethod
-    @Override
-    public void requestPermissions(PluginCall call) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            super.requestPermissions(call);
-        } else {
-            requestCompatPermissions(call);
-        }
-    }
-
-    /*
-    * Request location permission if requested, otherwise resolve with all requested permissions
-    * granted, as Android 11< only requires location permission.
-    * */
-    private void requestCompatPermissions(PluginCall call) {
-        JSArray requestedPermissions = call.getArray("permissions");
-        try {
-            // for Android 11< we only need/can request location permission, all others are granted
-            if (requestedPermissions.toList().contains(LOCATION) && getPermissionState(LOCATION) != PermissionState.GRANTED) {
-                requestPermissionForAlias(LOCATION, call, "requestCompatPermissionsCallback");
-            } else {
-                JSObject permissions = getGrantedPermissions(requestedPermissions);
-                call.resolve(permissions);
-            }
-        } catch(JSONException exception) {
-            String message = exception.getMessage();
-            Log.e(TAG, message);
-            call.reject(message);
-        }
-    }
-
-    @PermissionCallback
-    private void requestCompatPermissionsCallback(PluginCall call) {
-        JSArray requestedPermissions = call.getArray("permissions");
-        try {
-            JSObject permissions = getGrantedPermissions(requestedPermissions);
-            permissions.put(LOCATION, getPermissionState(LOCATION));
-            call.resolve(permissions);
-        } catch (JSONException exception) {
-            String message = exception.getMessage();
-            Log.e(TAG, message);
-            call.reject(message);
-        }
-    }
-
-    private JSObject getGrantedPermissions(JSArray requestedPermissions) throws JSONException {
-        JSObject response = new JSObject();
-        for (int i = 0; i < requestedPermissions.length(); i++) {
-            String alias = (String) requestedPermissions.get(i);
-            response.put(alias, PermissionState.GRANTED);
-        }
-        return response;
+                .put("deviceClass", btClass != null ? btClass.getDeviceClass() : JSObject.NULL);
     }
 
     @PermissionCallback
@@ -404,19 +389,92 @@ public class BluetoothSerialPlugin extends Plugin {
     @PermissionCallback
     private void scanPermissionCallback(PluginCall call) {
         if (getPermissionState(SCAN) == PermissionState.GRANTED) {
-            switch(call.getMethodName()) {
-                case "discoverUnpaired": startDiscovery(call); break;
-                case "cancelDiscovery": cancelDiscovery(call); break;
-            }
+            cancelDiscovery(call);
         } else {
             call.reject("Scan permission denied");
+        }
+    }
+
+    @PluginMethod
+    @Override
+    public void checkPermissions(PluginCall call) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            super.checkPermissions(call);
+        } else {
+            checkCompatPermissions(call);
+        }
+    }
+
+    private void checkCompatPermissions(PluginCall call) {
+        // scan and connect don't exist on older versions of Android so we only check location
+        JSObject permissions = new JSObject()
+                .put(COARSE_LOCATION, getPermissionState(COARSE_LOCATION))
+                .put(FINE_LOCATION, getPermissionState(FINE_LOCATION))
+                .put(SCAN, PermissionState.GRANTED)
+                .put(CONNECT, PermissionState.GRANTED);
+        call.resolve(permissions);
+    }
+
+    @PluginMethod
+    @Override
+    public void requestPermissions(PluginCall call) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            super.requestPermissions(call);
+        } else {
+            requestCompatPermissions(call);
+        }
+    }
+
+    private void requestCompatPermissions(PluginCall call) {
+        try {
+            List<String> requestedPermissions = call.getArray("permissions").toList();
+            List<String> locationPermissions = new ArrayList<>();
+            for (String permission: requestedPermissions) {
+                if (permission.contains("Location")) {
+                    locationPermissions.add(permission);
+                }
+            }
+            if (locationPermissions.isEmpty()) {
+                JSObject permissions = new JSObject();
+                for (String alias: requestedPermissions) {
+                    permissions.put(alias, PermissionState.GRANTED);
+                }
+                call.resolve(permissions);
+            } else {
+                String[] aliases = locationPermissions.toArray(new String[0]);
+                requestPermissionForAliases(aliases, call, "requestCompatPermissionCallback");
+            }
+        } catch(JSONException exception) {
+            call.reject(exception.getMessage());
+        }
+    }
+
+    @PermissionCallback
+    private void requestCompatPermissionCallback(PluginCall call) {
+        try {
+            List<String> requestedPermissions = call.getArray("permissions").toList();
+            JSObject permissions = new JSObject();
+            for (String alias: requestedPermissions) {
+                if (alias.contains("Location")) {
+                    permissions.put(alias, getPermissionState(alias));
+                } else {
+                    permissions.put(alias, PermissionState.GRANTED);
+                }
+            }
+            call.resolve(permissions);
+        } catch(JSONException exception) {
+            call.reject(exception.getMessage());
         }
     }
 
     // This is called only for permissions that may not exist on older Android versions,
     // otherwise getPermissionState(alias) is used
     private boolean hasCompatPermission(String alias) {
-        return Build.VERSION.SDK_INT < Build.VERSION_CODES.R || getPermissionState(alias) == PermissionState.GRANTED;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            return getPermissionState(alias) == PermissionState.GRANTED;
+        } else {
+            return true;
+        }
     }
 
     private boolean rejectIfBluetoothDisabled(PluginCall call) {
@@ -429,10 +487,6 @@ public class BluetoothSerialPlugin extends Plugin {
 
     private void requestConnectPermission(PluginCall call) {
         requestPermissionForAlias(CONNECT, call, "connectPermissionCallback");
-    }
-
-    private void requestScanPermission(PluginCall call) {
-        requestPermissionForAlias(SCAN, call, "scanPermissionCallback");
     }
 
     @Override
