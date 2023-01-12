@@ -12,6 +12,7 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.location.LocationManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
@@ -21,6 +22,7 @@ import android.util.Log;
 
 import androidx.activity.result.ActivityResult;
 import androidx.annotation.NonNull;
+import androidx.core.location.LocationManagerCompat;
 
 import com.getcapacitor.JSObject;
 import com.getcapacitor.PermissionState;
@@ -62,6 +64,7 @@ public class BluetoothSerialPlugin extends Plugin {
     private PluginCall writeCall;
     private PluginCall discoveryCall;
     private BroadcastReceiver discoveryReceiver;
+    private boolean requiresLocationForDiscovery = true;
     private final List<String> discoveryPermissions = new ArrayList<>();
 
     StringBuffer buffer = new StringBuffer();
@@ -111,11 +114,13 @@ public class BluetoothSerialPlugin extends Plugin {
     private void setDiscoveryPermissions() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             discoveryPermissions.add(SCAN);
-            if (!getConfig().getBoolean("neverScanForLocation", false)) {
+            if (getConfig().getBoolean("neverScanForLocation", false)) {
+                requiresLocationForDiscovery = false;
+            } else {
                 discoveryPermissions.add(FINE_LOCATION);
             }
         } else {
-         discoveryPermissions.add(Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q ? FINE_LOCATION : COARSE_LOCATION);
+            discoveryPermissions.add(Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q ? FINE_LOCATION : COARSE_LOCATION);
         }
     }
 
@@ -264,11 +269,20 @@ public class BluetoothSerialPlugin extends Plugin {
     @PluginMethod
     public void discoverUnpaired(PluginCall call) {
         if (rejectIfBluetoothDisabled(call)) return;
+        if (requiresLocationForDiscovery && !isLocationEnabled()) {
+            call.reject("Location services are not enabled");
+            return;
+        }
         if (hasDiscoveryPermissions()) {
             startDiscovery(call);
         } else {
             requestDiscoveryPermissions(call);
         }
+    }
+
+    private boolean isLocationEnabled() {
+        LocationManager lm = (LocationManager) getContext().getSystemService(Context.LOCATION_SERVICE);
+        return LocationManagerCompat.isLocationEnabled(lm);
     }
 
     private boolean hasDiscoveryPermissions() {
