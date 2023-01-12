@@ -6,12 +6,14 @@ export interface BluetoothSerialPlugin {
    * Connects to the bluetooth device with the given address.
    * The plugin only retains one connection at a time; upon connecting to a device, while there is already an existing connection,
    * the previous device is disconnected.
+   * Requires CONNECT permission on Android API >= 30
    */
   connect(options: connectionOptions): Promise<void>;
   /**
    * Connects to the bluetooth device with the given address.
    * The plugin only retains one connection at a time; upon connecting to a device, while there is already an existing connection,
    * the previous device is disconnected.
+   * Requires CONNECT permission on Android API >= 30
    */
   connectInsecure(options: connectionOptions): Promise<void>;
   /**
@@ -45,6 +47,7 @@ export interface BluetoothSerialPlugin {
   clear(): Promise<void>;
   /**
    * Displays the native prompt for enabling bluetooth. Returns true or false depending on whether the user enabled bluetooth.
+   * Requires CONNECT permission on Android API >= 30
    */
   enable(): Promise<{ isEnabled: boolean }>;
   /**
@@ -53,11 +56,24 @@ export interface BluetoothSerialPlugin {
   settings(): Promise<void>;
   /**
    * Returns a list of bonded devices. This includes devices that were previously paired with the user's device
+   * Requires CONNECT permission on Android API >= 30
    */
   list(): Promise<devices>;
   /**
    * Begins the discovery of nearby devices and resolves with them once discovery is finished.
    * There may only be one discovery process at a time.
+   * On Android API >= 30 requires SCAN and FINE_LOCATION permissions.
+   * You can declare in your manifest that scanning for devices is not used to derive the user's location. In that case, you may also
+   * add the following into your capacitor.config.ts to indicate that the plugin should not require FINE_LOCATION:
+   * @example
+   * BluetoothSerial: {
+   *  neverScanForLocation: true,
+   * }
+   * @
+   * In that case, only SCAN is required.
+   * On Android 10 and 11, only FINE_LOCATION is required.
+   * On lower versions, only COARSE_LOCATION is required.
+   * https://developer.android.com/guide/topics/connectivity/bluetooth/permissions
    * @throws "Discovery cancelled" if discovery is cancelled either by calling discoverUnpaired() while there is a previous
    * discoverUnpaired() call in progress, or by calling cancelDiscovery().
    */
@@ -65,6 +81,7 @@ export interface BluetoothSerialPlugin {
   /**
    * Cancels current unpaired devices discovery, if there is one in progress. If there is no discovery in progress, resolves with void.
    * Be sure to note that calling this will reject any existing discoverUnpaired() call which hasn't resolved yet.
+   * Requires SCAN permission on Android API >= 30
    */
   cancelDiscovery(): Promise<void>;
   /**
@@ -86,10 +103,10 @@ export interface BluetoothDevice {
   address: string;
   name?: string;
   // you may use this property to conclude what sort of device the connected device is
-  class?: number;
+  deviceClass?: number;
 }
 
-export type permissions = 'location' | 'scan' | 'connect';
+export type permissions = 'coarseLocation' | 'fineLocation' | 'scan' | 'connect';
 export type PermissionStatus = { [permission in permissions]?: PermissionState };
 export type devices = { devices: BluetoothDevice[] };
 export enum ConnectionState {
