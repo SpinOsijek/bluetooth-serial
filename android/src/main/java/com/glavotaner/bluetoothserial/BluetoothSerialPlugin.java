@@ -413,16 +413,15 @@ public class BluetoothSerialPlugin extends Plugin {
         try {
             List<String> requestedPermissions = call.getArray("permissions").toList();
             List<String> locationPermissions = new ArrayList<>();
+            JSObject permissions = new JSObject();
             for (String permission: requestedPermissions) {
                 if (permission.contains("Location")) {
                     locationPermissions.add(permission);
+                } else {
+                    permissions.put(permission, PermissionState.GRANTED);
                 }
             }
             if (locationPermissions.isEmpty()) {
-                JSObject permissions = new JSObject();
-                for (String alias: requestedPermissions) {
-                    permissions.put(alias, PermissionState.GRANTED);
-                }
                 call.resolve(permissions);
             } else {
                 String[] aliases = locationPermissions.toArray(new String[0]);
