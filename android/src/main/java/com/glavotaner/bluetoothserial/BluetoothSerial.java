@@ -88,10 +88,6 @@ public class BluetoothSerial {
     private synchronized void setState(ConnectionState state) {
         if (D) Log.d(TAG, "setState() " + mState + " -> " + state);
         mState = state;
-        sendStateToPlugin(state);
-    }
-
-    private void sendStateToPlugin(ConnectionState state) {
         Bundle bundle = new Bundle();
         bundle.putInt("state", state.value());
         sendConnectionStateToPlugin(SUCCESS, bundle);
@@ -174,6 +170,22 @@ public class BluetoothSerial {
         message.sendToTarget();
     }
 
+    private void closeRunningThreads() {
+        if (mConnectThread != null) {
+            mConnectThread.cancel();
+            mConnectThread = null;
+        }
+        if (mIOThread != null) {
+            mIOThread.cancel();
+            mIOThread = null;
+        }
+    }
+
+    private void handleConnectionError(String message) {
+        sendConnectionErrorToPlugin(message);
+        BluetoothSerial.this.resetService();
+    }
+
     /**
      * This thread runs while attempting to make an outgoing connection
      * with a device. It runs straight through; the connection either
@@ -202,20 +214,20 @@ public class BluetoothSerial {
                 return;
             }
             // Reset the ConnectThread because we're done
-            synchronized (BluetoothSerial.this) { mConnectThread = null; }
-            startIOThread();
+            synchronized (BluetoothSerial.this) {
+                mConnectThread = null;
+                startIOThread();
+            }
         }
 
         /**
          * Start the IOThread to begin managing a Bluetooth connection
          */
         private void startIOThread() {
-            synchronized (BluetoothSerial.this) {
-                if (D) Log.d(TAG, "connected, Socket Type:" + mSocketType);
-                // Start the thread to manage the connection and perform transmissions
-                mIOThread = new IOThread(mmSocket, mSocketType);
-                mIOThread.start();
-            }
+            if (D) Log.d(TAG, "connected, Socket Type:" + mSocketType);
+            // Start the thread to manage the connection and perform transmissions
+            mIOThread = new IOThread(mmSocket, mSocketType);
+            mIOThread.start();
         }
 
         public void cancel() {
@@ -257,13 +269,11 @@ public class BluetoothSerial {
         public void run() {
             Log.i(TAG, "BEGIN mConnectedThread");
             byte[] buffer = new byte[1024];
-            boolean connected = true;
-            while (connected) {
+            while (mState == ConnectionState.CONNECTED) {
                 try {
                     String data = getBufferData(buffer);
                     sendToPlugin(data);
                 } catch (IOException e) {
-                    connected = false;
                     Log.e(TAG, "disconnected", e);
                     handleConnectionError("Device connection was lost");
                 }
@@ -311,22 +321,6 @@ public class BluetoothSerial {
             message.setData(bundle);
             message.sendToTarget();
         }
-    }
-
-    private void closeRunningThreads() {
-        if (mConnectThread != null) {
-            mConnectThread.cancel();
-            mConnectThread = null;
-        }
-        if (mIOThread != null) {
-            mIOThread.cancel();
-            mIOThread = null;
-        }
-    }
-
-    private void handleConnectionError(String message) {
-        sendConnectionErrorToPlugin(message);
-        BluetoothSerial.this.resetService();
     }
 
     private interface SocketCreator {

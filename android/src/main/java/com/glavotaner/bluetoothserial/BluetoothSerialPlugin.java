@@ -65,7 +65,7 @@ public class BluetoothSerialPlugin extends Plugin {
     private PluginCall writeCall;
     private PluginCall discoveryCall;
     private BroadcastReceiver discoveryReceiver;
-    private boolean requiresLocationForDiscovery = false;
+    private boolean requiresLocationForDiscovery = true;
     private final List<String> discoveryPermissions = new ArrayList<>();
 
     StringBuffer buffer = new StringBuffer();
@@ -116,12 +116,12 @@ public class BluetoothSerialPlugin extends Plugin {
     private void setDiscoveryPermissions() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             discoveryPermissions.add(SCAN);
-            if (!getConfig().getBoolean("neverScanForLocation", false)) {
-                requiresLocationForDiscovery = true;
+            if (getConfig().getBoolean("neverScanForLocation", false)) {
+                requiresLocationForDiscovery = false;
+            } else {
                 discoveryPermissions.add(FINE_LOCATION);
             }
         } else {
-            requiresLocationForDiscovery = true;
             discoveryPermissions.add(Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q ? FINE_LOCATION : COARSE_LOCATION);
         }
     }
