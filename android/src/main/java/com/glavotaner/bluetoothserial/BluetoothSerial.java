@@ -257,13 +257,11 @@ public class BluetoothSerial {
         public void run() {
             Log.i(TAG, "BEGIN mConnectedThread");
             byte[] buffer = new byte[1024];
-            boolean connected = true;
-            while (connected) {
+            while (mState == ConnectionState.CONNECTED) {
                 try {
                     String data = getBufferData(buffer);
                     sendToPlugin(data);
                 } catch (IOException e) {
-                    connected = false;
                     Log.e(TAG, "disconnected", e);
                     handleConnectionError("Device connection was lost");
                 }
