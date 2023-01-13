@@ -8,10 +8,12 @@ import android.app.Activity;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothClass;
 import android.bluetooth.BluetoothDevice;
+import android.bluetooth.BluetoothManager;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.location.LocationManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
@@ -21,6 +23,7 @@ import android.util.Log;
 
 import androidx.activity.result.ActivityResult;
 import androidx.annotation.NonNull;
+import androidx.core.location.LocationManagerCompat;
 
 import com.getcapacitor.JSObject;
 import com.getcapacitor.PermissionState;
@@ -62,6 +65,7 @@ public class BluetoothSerialPlugin extends Plugin {
     private PluginCall writeCall;
     private PluginCall discoveryCall;
     private BroadcastReceiver discoveryReceiver;
+    private boolean requiresLocationForDiscovery = false;
     private final List<String> discoveryPermissions = new ArrayList<>();
 
     StringBuffer buffer = new StringBuffer();
@@ -105,17 +109,20 @@ public class BluetoothSerialPlugin extends Plugin {
             buffer.append(message.getData().getString("data"));
             return false;
         });
-        implementation = new BluetoothSerial(connectionHandler, writeHandler, readHandler);
+        BluetoothManager bluetoothManager = getContext().getSystemService(BluetoothManager.class);
+        implementation = new BluetoothSerial(bluetoothManager.getAdapter(), connectionHandler, writeHandler, readHandler);
     }
 
     private void setDiscoveryPermissions() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             discoveryPermissions.add(SCAN);
             if (!getConfig().getBoolean("neverScanForLocation", false)) {
+                requiresLocationForDiscovery = true;
                 discoveryPermissions.add(FINE_LOCATION);
             }
         } else {
-         discoveryPermissions.add(Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q ? FINE_LOCATION : COARSE_LOCATION);
+            requiresLocationForDiscovery = true;
+            discoveryPermissions.add(Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q ? FINE_LOCATION : COARSE_LOCATION);
         }
     }
 
@@ -264,11 +271,20 @@ public class BluetoothSerialPlugin extends Plugin {
     @PluginMethod
     public void discoverUnpaired(PluginCall call) {
         if (rejectIfBluetoothDisabled(call)) return;
+        if (requiresLocationForDiscovery && !isLocationEnabled()) {
+            call.reject("Location services are not enabled");
+            return;
+        }
         if (hasDiscoveryPermissions()) {
             startDiscovery(call);
         } else {
             requestDiscoveryPermissions(call);
         }
+    }
+
+    private boolean isLocationEnabled() {
+        LocationManager lm = (LocationManager) getContext().getSystemService(Context.LOCATION_SERVICE);
+        return LocationManagerCompat.isLocationEnabled(lm);
     }
 
     private boolean hasDiscoveryPermissions() {
