@@ -229,7 +229,8 @@ discoverUnpaired() => Promise<devices>
 ```
 
 Begins the discovery of nearby <a href="#devices">devices</a> and resolves with them once discovery is finished.
-There may only be one discovery process at a time.
+There may only be one discovery process at a time. If another call starts while there is a discovery in progress,
+the original call will resolve with "Discovery cancelled".
 
 On Android API &gt;= 30 requires SCAN and FINE_LOCATION <a href="#permissions">permissions</a>.
 You can declare in your manifest that scanning for <a href="#devices">devices</a> is not used to derive the user's location. In that case, you may also
@@ -244,6 +245,9 @@ In that case, only SCAN is required.
 On Android 10 and 11, only FINE_LOCATION is required.
 
 On lower versions, only COARSE_LOCATION is required.
+
+The versions of Android that require location <a href="#permissions">permissions</a>, also require location services to be enabled.
+So this plugin will reject with "Location services not enabled" if the device requires location for scanning, but it is disabled.
 
 https://developer.android.com/guide/topics/connectivity/bluetooth/permissions
 
