@@ -3,16 +3,16 @@ import type { PermissionState, PluginListenerHandle } from "@capacitor/core";
 export interface BluetoothSerialPlugin {
   echo(options: { value: string }): Promise<{ value: string }>;
   /**
-   * Connects to the bluetooth device with the given address.
+   * Creates a secure connection (https://developer.android.com/reference/android/bluetooth/BluetoothDevice#createRfcommSocketToServiceRecord(java.util.UUID)) to the bluetooth device with the given address.
    * The plugin only retains one connection at a time; upon connecting to a device, while there is already an existing connection,
-   * the previous device is disconnected.
+   * the previous device is disconnected. If there is already a running connect call that hasn't resolved, and a new one starts, the original will reject with "Connection interrupted".
    * Requires CONNECT permission on Android API >= 30
    */
   connect(options: connectionOptions): Promise<void>;
   /**
-   * Connects to the bluetooth device with the given address.
+   * Creates an insecure connection (https://developer.android.com/reference/android/bluetooth/BluetoothDevice#createInsecureRfcommSocketToServiceRecord(java.util.UUID)) to the bluetooth device with the given address.
    * The plugin only retains one connection at a time; upon connecting to a device, while there is already an existing connection,
-   * the previous device is disconnected.
+   * the previous device is disconnected. If there is already a running connect call that hasn't resolved, and a new one starts, the original will reject with "Connection interrupted".
    * Requires CONNECT permission on Android API >= 30
    */
   connectInsecure(options: connectionOptions): Promise<void>;
@@ -62,17 +62,21 @@ export interface BluetoothSerialPlugin {
   /**
    * Begins the discovery of nearby devices and resolves with them once discovery is finished.
    * There may only be one discovery process at a time.
+   * 
    * On Android API >= 30 requires SCAN and FINE_LOCATION permissions.
    * You can declare in your manifest that scanning for devices is not used to derive the user's location. In that case, you may also
    * add the following into your capacitor.config.ts to indicate that the plugin should not require FINE_LOCATION:
-   * @example
+   * 
    * BluetoothSerial: {
    *  neverScanForLocation: true,
    * }
-   * @
+   * 
    * In that case, only SCAN is required.
+   * 
    * On Android 10 and 11, only FINE_LOCATION is required.
+   * 
    * On lower versions, only COARSE_LOCATION is required.
+   * 
    * https://developer.android.com/guide/topics/connectivity/bluetooth/permissions
    * @throws "Discovery cancelled" if discovery is cancelled either by calling discoverUnpaired() while there is a previous
    * discoverUnpaired() call in progress, or by calling cancelDiscovery().
