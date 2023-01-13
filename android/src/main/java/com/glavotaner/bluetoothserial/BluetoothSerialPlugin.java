@@ -144,6 +144,9 @@ public class BluetoothSerialPlugin extends Plugin {
     private void connect(@NonNull PluginCall call, Connector connector) {
         if (rejectIfBluetoothDisabled(call)) return;
         if (hasCompatPermission(CONNECT)) {
+            if (connectCall != null) {
+                connectCall.reject("Connection interrupted");
+            }
             connectToDevice(call, connector);
         } else {
             requestConnectPermission(call);
