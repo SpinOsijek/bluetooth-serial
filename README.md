@@ -1,6 +1,12 @@
 # bluetooth-serial
 
-Use native bluetooth functionality
+Use classic bluetooth functionality.
+
+How this plugin is different from it's source:
+### Capacitor-based
+### Promise-based
+### Adapted for permission requirements across multiple Android version ranges
+### Only supports bluetooth classic on Android, no other platform is supported
 
 ## Install
 
