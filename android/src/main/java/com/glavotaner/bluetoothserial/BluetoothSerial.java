@@ -38,11 +38,11 @@ public class BluetoothSerial {
     private final Handler readHandler;
     private ConnectionState mState;
 
-    public BluetoothSerial(Handler connectionHandler, Handler writeHandler, Handler readHandler) {
+    public BluetoothSerial(BluetoothAdapter bluetoothAdapter, Handler connectionHandler, Handler writeHandler, Handler readHandler) {
+        this.mAdapter = bluetoothAdapter;
         this.connectionHandler = connectionHandler;
         this.writeHandler = writeHandler;
         this.readHandler = readHandler;
-        mAdapter = BluetoothAdapter.getDefaultAdapter();
         mState = ConnectionState.NONE;
     }
 

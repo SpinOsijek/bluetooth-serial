@@ -8,6 +8,7 @@ import android.app.Activity;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothClass;
 import android.bluetooth.BluetoothDevice;
+import android.bluetooth.BluetoothManager;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -108,7 +109,8 @@ public class BluetoothSerialPlugin extends Plugin {
             buffer.append(message.getData().getString("data"));
             return false;
         });
-        implementation = new BluetoothSerial(connectionHandler, writeHandler, readHandler);
+        BluetoothManager bluetoothManager = getContext().getSystemService(BluetoothManager.class);
+        implementation = new BluetoothSerial(bluetoothManager.getAdapter(), connectionHandler, writeHandler, readHandler);
     }
 
     private void setDiscoveryPermissions() {
