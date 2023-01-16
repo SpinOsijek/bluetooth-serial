@@ -150,6 +150,7 @@ public class BluetoothSerialPlugin extends Plugin {
         if (hasCompatPermission(CONNECT)) {
             if (connectCall != null) {
                 connectCall.reject("Connection interrupted");
+                connectCall = null;
             }
             connectToDevice(call, connector);
         } else {
