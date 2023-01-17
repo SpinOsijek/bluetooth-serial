@@ -246,7 +246,7 @@ BluetoothSerial: {
  neverScanForLocation: true,
 }
 
-In that case, only SCAN is required.
+In that case, only SCAN and CONNECT are required.
 
 On Android 10 and 11, only FINE_LOCATION is required.
 
