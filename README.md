@@ -5,7 +5,7 @@ Use classic bluetooth functionality.
 How this plugin is different from it's source:
 #### Capacitor-based
 #### Promise-based
-#### Adapted for permission requirements across multiple Android version ranges
+#### Adapted for permission requirements at least from Android 5.1 upto Android 11+
 #### Only supports bluetooth classic on Android, no other platform is supported
 
 ## Permissions
