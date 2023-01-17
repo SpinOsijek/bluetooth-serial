@@ -40,6 +40,7 @@ import org.json.JSONException;
 
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -343,6 +344,7 @@ public class BluetoothSerialPlugin extends Plugin {
         discoveryCall = call;
         discoveryReceiver = new BroadcastReceiver() {
 
+            private final Set<String> foundAddresses = new HashSet<>();
             private final JSONArray unpairedDevices = new JSONArray();
             private final JSObject result = new JSObject().put("devices", unpairedDevices);
 
@@ -350,9 +352,14 @@ public class BluetoothSerialPlugin extends Plugin {
                 String action = intent.getAction();
                 if (BluetoothDevice.ACTION_FOUND.equals(action)) {
                     BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
-                    unpairedDevices.put(deviceToJSON(device));
-                    result.put("devices", unpairedDevices);
-                    notifyListeners("discoverUnpaired", result);
+                    String address = device.getAddress();
+                    // for some reason, ACTION_FOUND sometimes finds duplicates
+                    if (!foundAddresses.contains(address)) {
+                        foundAddresses.add(address);
+                        unpairedDevices.put(deviceToJSON(device));
+                        result.put("devices", unpairedDevices);
+                        notifyListeners("discoverUnpaired", result);
+                    }
                 } else if (BluetoothAdapter.ACTION_DISCOVERY_FINISHED.equals(action)) {
                     discoveryCall.resolve(result);
                     getActivity().unregisterReceiver(this);
