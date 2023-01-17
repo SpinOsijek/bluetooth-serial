@@ -3,14 +3,16 @@
 Use classic bluetooth functionality.
 
 How this plugin is different from it's source:
-### Capacitor-based
-### Promise-based
-### Adapted for permission requirements across multiple Android version ranges
-### Only supports bluetooth classic on Android, no other platform is supported
+#### Capacitor-based
+#### Promise-based
+#### Adapted for permission requirements across multiple Android version ranges
+#### Only supports bluetooth classic on Android, no other platform is supported
 
 ## Permissions
 For things to work, you need to add certain permissions into your AndroidManifest. Refer to this for a detailed description:
 https://developer.android.com/guide/topics/connectivity/bluetooth/permissions
+
+The plugin requests/checks permissions in a granular fashion; a call that only requires the CONNECT permission will only check/request that permission. As opposed to every call that requires any permission, requesting all of them.
 
 ## Install
 
