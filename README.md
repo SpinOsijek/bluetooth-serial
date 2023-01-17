@@ -8,6 +8,10 @@ How this plugin is different from it's source:
 ### Adapted for permission requirements across multiple Android version ranges
 ### Only supports bluetooth classic on Android, no other platform is supported
 
+## Permissions
+For things to work, you need to add certain permissions into your AndroidManifest. Refer to this for a detailed description:
+https://developer.android.com/guide/topics/connectivity/bluetooth/permissions
+
 ## Install
 
 ```bash
