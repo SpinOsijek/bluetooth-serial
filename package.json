@@ -6,7 +6,9 @@
   "module": "dist/esm/index.js",
   "types": "dist/esm/index.d.ts",
   "files": [
-    "dist"
+    "dist",
+    "android",
+    "ios"
   ],
   "unpkg": "dist/plugin.js",
   "author": "glavotaner",
