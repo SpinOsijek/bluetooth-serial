@@ -358,10 +358,6 @@ removeAllListeners() => Promise<void>
 
 
 #### BluetoothDevice
-The deviceClass property is a decimal representation of a given device's Bluetooth Class of Device which signifies what type of device it is.
-Eg. for printers, deviceClass will be 1664.
-If you need to know what deviceClass to expect for devices you're working with, you may use this website to get the binary or hexadecimal representation of a given device type: http://bluetooth-pentest.narod.ru/software/bluetooth_class_of_device-service_generator.html
-Then you can use a website such as: https://www.rapidtables.com/convert/number/hex-to-decimal.html , to convert the given hexadecimal value into a decimal value, which will ultimately correspond to the deviceClass.
 
 | Prop              | Type                |
 | ----------------- | ------------------- |

@@ -1,0 +1,440 @@
+{
+  "api": {
+    "name": "BluetoothSerialPlugin",
+    "slug": "bluetoothserialplugin",
+    "docs": "",
+    "tags": [],
+    "methods": [
+      {
+        "name": "echo",
+        "signature": "(options: { value: string; }) => Promise<{ value: string; }>",
+        "parameters": [
+          {
+            "name": "options",
+            "docs": "",
+            "type": "{ value: string; }"
+          }
+        ],
+        "returns": "Promise<{ value: string; }>",
+        "tags": [],
+        "docs": "",
+        "complexTypes": [],
+        "slug": "echo"
+      },
+      {
+        "name": "connect",
+        "signature": "(options: connectionOptions) => Promise<void>",
+        "parameters": [
+          {
+            "name": "options",
+            "docs": "",
+            "type": "connectionOptions"
+          }
+        ],
+        "returns": "Promise<void>",
+        "tags": [],
+        "docs": "Creates a secure connection (https://developer.android.com/reference/android/bluetooth/BluetoothDevice#createRfcommSocketToServiceRecord(java.util.UUID)) to the bluetooth device with the given address.\r\nThe plugin only retains one connection at a time; upon connecting to a device, while there is already an existing connection,\r\nthe previous device is disconnected. If there is already a running connect call that hasn't resolved, and a new one starts, the original will reject with \"Connection interrupted\".\r\nRequires CONNECT permission on Android API >= 30",
+        "complexTypes": [
+          "connectionOptions"
+        ],
+        "slug": "connect"
+      },
+      {
+        "name": "connectInsecure",
+        "signature": "(options: connectionOptions) => Promise<void>",
+        "parameters": [
+          {
+            "name": "options",
+            "docs": "",
+            "type": "connectionOptions"
+          }
+        ],
+        "returns": "Promise<void>",
+        "tags": [],
+        "docs": "Creates an insecure connection (https://developer.android.com/reference/android/bluetooth/BluetoothDevice#createInsecureRfcommSocketToServiceRecord(java.util.UUID)) to the bluetooth device with the given address.\r\nThe plugin only retains one connection at a time; upon connecting to a device, while there is already an existing connection,\r\nthe previous device is disconnected. If there is already a running connect call that hasn't resolved, and a new one starts, the original will reject with \"Connection interrupted\".\r\nRequires CONNECT permission on Android API >= 30",
+        "complexTypes": [
+          "connectionOptions"
+        ],
+        "slug": "connectinsecure"
+      },
+      {
+        "name": "disconnect",
+        "signature": "() => Promise<void>",
+        "parameters": [],
+        "returns": "Promise<void>",
+        "tags": [],
+        "docs": "Disconnects from the currently connected device.\r\nThis may be called while there is no connected device; in that case, the method will resolve with void.",
+        "complexTypes": [],
+        "slug": "disconnect"
+      },
+      {
+        "name": "read",
+        "signature": "() => Promise<{ data: string; }>",
+        "parameters": [],
+        "returns": "Promise<{ data: string; }>",
+        "tags": [],
+        "docs": "Returns data emitted from the currently connected device.",
+        "complexTypes": [],
+        "slug": "read"
+      },
+      {
+        "name": "write",
+        "signature": "(options: { data: string; }) => Promise<void>",
+        "parameters": [
+          {
+            "name": "options",
+            "docs": "",
+            "type": "{ data: string; }"
+          }
+        ],
+        "returns": "Promise<void>",
+        "tags": [],
+        "docs": "Writes data to the currently connected device.",
+        "complexTypes": [],
+        "slug": "write"
+      },
+      {
+        "name": "available",
+        "signature": "() => Promise<{ available: number; }>",
+        "parameters": [],
+        "returns": "Promise<{ available: number; }>",
+        "tags": [],
+        "docs": "Returns the length of the data that can be read by calling read().",
+        "complexTypes": [],
+        "slug": "available"
+      },
+      {
+        "name": "isEnabled",
+        "signature": "() => Promise<{ isEnabled: boolean; }>",
+        "parameters": [],
+        "returns": "Promise<{ isEnabled: boolean; }>",
+        "tags": [],
+        "docs": "Returns true or false depending on whether bluetooth is enabled.",
+        "complexTypes": [],
+        "slug": "isenabled"
+      },
+      {
+        "name": "isConnected",
+        "signature": "() => Promise<{ isConnected: boolean; }>",
+        "parameters": [],
+        "returns": "Promise<{ isConnected: boolean; }>",
+        "tags": [],
+        "docs": "Returns true or false depending on whether the plugin is currently connected to a device.",
+        "complexTypes": [],
+        "slug": "isconnected"
+      },
+      {
+        "name": "clear",
+        "signature": "() => Promise<void>",
+        "parameters": [],
+        "returns": "Promise<void>",
+        "tags": [],
+        "docs": "Clears the data readable by calling read().",
+        "complexTypes": [],
+        "slug": "clear"
+      },
+      {
+        "name": "enable",
+        "signature": "() => Promise<{ isEnabled: boolean; }>",
+        "parameters": [],
+        "returns": "Promise<{ isEnabled: boolean; }>",
+        "tags": [],
+        "docs": "Displays the native prompt for enabling bluetooth. Returns true or false depending on whether the user enabled bluetooth.\r\nRequires CONNECT permission on Android API >= 30",
+        "complexTypes": [],
+        "slug": "enable"
+      },
+      {
+        "name": "settings",
+        "signature": "() => Promise<void>",
+        "parameters": [],
+        "returns": "Promise<void>",
+        "tags": [],
+        "docs": "Opens the native bluetooth settings activity. Resolves immediately upon being called.",
+        "complexTypes": [],
+        "slug": "settings"
+      },
+      {
+        "name": "list",
+        "signature": "() => Promise<devices>",
+        "parameters": [],
+        "returns": "Promise<devices>",
+        "tags": [],
+        "docs": "Returns a list of bonded devices. This includes devices that were previously paired with the user's device\r\nRequires CONNECT permission on Android API >= 30",
+        "complexTypes": [
+          "devices"
+        ],
+        "slug": "list"
+      },
+      {
+        "name": "discoverUnpaired",
+        "signature": "() => Promise<devices>",
+        "parameters": [],
+        "returns": "Promise<devices>",
+        "tags": [],
+        "docs": "Begins the discovery of nearby devices and resolves with them once discovery is finished.\r\nThere may only be one discovery process at a time. If another call starts while there is a discovery in progress,\r\nthe original call will resolve with \"Discovery cancelled\".\r\n\r\nOn Android API >= 30 requires SCAN, CONNECT and FINE_LOCATION permissions.\r\nYou can declare in your manifest that scanning for devices is not used to derive the user's location. In that case, you may also\r\nadd the following into your capacitor.config.ts to indicate that the plugin should not require FINE_LOCATION:\r\n\r\nBluetoothSerial: {\r\n neverScanForLocation: true,\r\n}\r\n\r\nIn that case, only SCAN and CONNECT are required.\r\n\r\nOn Android 10 and 11, only FINE_LOCATION is required.\r\n\r\nOn lower versions, only COARSE_LOCATION is required.\r\n\r\nThe versions of Android that require location permissions, also require location services to be enabled.\r\nSo this plugin will reject with \"Location services not enabled\" if the device requires location for scanning, but it is disabled.\r\n\r\nhttps://developer.android.com/guide/topics/connectivity/bluetooth/permissions",
+        "complexTypes": [
+          "devices"
+        ],
+        "slug": "discoverunpaired"
+      },
+      {
+        "name": "cancelDiscovery",
+        "signature": "() => Promise<void>",
+        "parameters": [],
+        "returns": "Promise<void>",
+        "tags": [],
+        "docs": "Cancels current unpaired devices discovery, if there is one in progress. If there is no discovery in progress, resolves with void.\r\nBe sure to note that calling this will reject any existing discoverUnpaired() call which hasn't resolved yet.\r\nRequires SCAN permission on Android API >= 30",
+        "complexTypes": [],
+        "slug": "canceldiscovery"
+      },
+      {
+        "name": "checkPermissions",
+        "signature": "() => Promise<PermissionStatus[]>",
+        "parameters": [],
+        "returns": "Promise<PermissionStatus[]>",
+        "tags": [],
+        "docs": "Takes into account the fact that SCAN and CONNECT permissions only exist on Android 11+; those permissions will always resolve as GRANTED\r\non devices below Android 11.",
+        "complexTypes": [
+          "PermissionStatus"
+        ],
+        "slug": "checkpermissions"
+      },
+      {
+        "name": "requestPermissions",
+        "signature": "(options: { permissions: permissions[]; }) => Promise<PermissionStatus[]>",
+        "parameters": [
+          {
+            "name": "options",
+            "docs": "",
+            "type": "{ permissions: permissions[]; }"
+          }
+        ],
+        "returns": "Promise<PermissionStatus[]>",
+        "tags": [],
+        "docs": "Takes into account the fact that SCAN and CONNECT permissions only exist on Android 11+; those permissions will always resolve as GRANTED\r\non devices below Android 11.",
+        "complexTypes": [
+          "PermissionStatus",
+          "permissions"
+        ],
+        "slug": "requestpermissions"
+      },
+      {
+        "name": "addListener",
+        "signature": "(event: 'discoverUnpaired', listenerFunc: (event: devices) => any) => Promise<PluginListenerHandle> & PluginListenerHandle",
+        "parameters": [
+          {
+            "name": "event",
+            "docs": "",
+            "type": "'discoverUnpaired'"
+          },
+          {
+            "name": "listenerFunc",
+            "docs": "",
+            "type": "(event: devices) => any"
+          }
+        ],
+        "returns": "Promise<PluginListenerHandle> & PluginListenerHandle",
+        "tags": [],
+        "docs": "",
+        "complexTypes": [
+          "PluginListenerHandle",
+          "devices"
+        ],
+        "slug": "addlistenerdiscoverunpaired"
+      },
+      {
+        "name": "addListener",
+        "signature": "(event: 'connectionChange', listenerFunc: (event: { state: ConnectionState; }) => any) => Promise<PluginListenerHandle> & PluginListenerHandle",
+        "parameters": [
+          {
+            "name": "event",
+            "docs": "",
+            "type": "'connectionChange'"
+          },
+          {
+            "name": "listenerFunc",
+            "docs": "",
+            "type": "(event: { state: ConnectionState; }) => any"
+          }
+        ],
+        "returns": "Promise<PluginListenerHandle> & PluginListenerHandle",
+        "tags": [],
+        "docs": "",
+        "complexTypes": [
+          "PluginListenerHandle",
+          "ConnectionState"
+        ],
+        "slug": "addlistenerconnectionchange"
+      },
+      {
+        "name": "removeAllListeners",
+        "signature": "() => Promise<void>",
+        "parameters": [],
+        "returns": "Promise<void>",
+        "tags": [],
+        "docs": "",
+        "complexTypes": [],
+        "slug": "removealllisteners"
+      }
+    ],
+    "properties": []
+  },
+  "interfaces": [
+    {
+      "name": "BluetoothDevice",
+      "slug": "bluetoothdevice",
+      "docs": "",
+      "tags": [],
+      "methods": [],
+      "properties": [
+        {
+          "name": "address",
+          "tags": [],
+          "docs": "",
+          "complexTypes": [],
+          "type": "string"
+        },
+        {
+          "name": "name",
+          "tags": [],
+          "docs": "",
+          "complexTypes": [],
+          "type": "string | undefined"
+        },
+        {
+          "name": "deviceClass",
+          "tags": [],
+          "docs": "",
+          "complexTypes": [],
+          "type": "number | undefined"
+        }
+      ]
+    },
+    {
+      "name": "PluginListenerHandle",
+      "slug": "pluginlistenerhandle",
+      "docs": "",
+      "tags": [],
+      "methods": [],
+      "properties": [
+        {
+          "name": "remove",
+          "tags": [],
+          "docs": "",
+          "complexTypes": [],
+          "type": "() => Promise<void>"
+        }
+      ]
+    }
+  ],
+  "enums": [
+    {
+      "name": "ConnectionState",
+      "slug": "connectionstate",
+      "members": [
+        {
+          "name": "NONE",
+          "tags": [],
+          "docs": ""
+        },
+        {
+          "name": "CONNECTING",
+          "tags": [],
+          "docs": ""
+        },
+        {
+          "name": "CONNECTED",
+          "tags": [],
+          "docs": ""
+        }
+      ]
+    }
+  ],
+  "typeAliases": [
+    {
+      "name": "connectionOptions",
+      "slug": "connectionoptions",
+      "docs": "",
+      "types": [
+        {
+          "text": "{ address: string }",
+          "complexTypes": []
+        }
+      ]
+    },
+    {
+      "name": "devices",
+      "slug": "devices",
+      "docs": "",
+      "types": [
+        {
+          "text": "{ devices: BluetoothDevice[] }",
+          "complexTypes": [
+            "BluetoothDevice"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "PermissionStatus",
+      "slug": "permissionstatus",
+      "docs": "",
+      "types": [
+        {
+          "text": "{ [permission in permissions]?: PermissionState }",
+          "complexTypes": [
+            "permissions",
+            "PermissionState"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "permissions",
+      "slug": "permissions",
+      "docs": "",
+      "types": [
+        {
+          "text": "'coarseLocation'",
+          "complexTypes": []
+        },
+        {
+          "text": "'fineLocation'",
+          "complexTypes": []
+        },
+        {
+          "text": "'scan'",
+          "complexTypes": []
+        },
+        {
+          "text": "'connect'",
+          "complexTypes": []
+        }
+      ]
+    },
+    {
+      "name": "PermissionState",
+      "slug": "permissionstate",
+      "docs": "",
+      "types": [
+        {
+          "text": "'prompt'",
+          "complexTypes": []
+        },
+        {
+          "text": "'prompt-with-rationale'",
+          "complexTypes": []
+        },
+        {
+          "text": "'granted'",
+          "complexTypes": []
+        },
+        {
+          "text": "'denied'",
+          "complexTypes": []
+        }
+      ]
+    }
+  ],
+  "pluginConfigs": []
+}
