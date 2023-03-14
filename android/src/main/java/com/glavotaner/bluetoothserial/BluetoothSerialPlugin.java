@@ -40,6 +40,7 @@ import org.json.JSONException;
 
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -65,8 +66,8 @@ public class BluetoothSerialPlugin extends Plugin {
     private PluginCall writeCall;
     private PluginCall discoveryCall;
     private BroadcastReceiver discoveryReceiver;
+    private List<String> discoveryPermissions;
     private boolean requiresLocationForDiscovery = true;
-    private final List<String> discoveryPermissions = new ArrayList<>();
 
     StringBuffer buffer = new StringBuffer();
 
@@ -121,14 +122,16 @@ public class BluetoothSerialPlugin extends Plugin {
 
     private void setDiscoveryPermissions() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            discoveryPermissions.add(SCAN);
+            // SCAN - required for just invoking discovery methods
+            // CONNECT - required for getting data about a discovered device
+            discoveryPermissions = List.of(SCAN, CONNECT);
             if (getConfig().getBoolean("neverScanForLocation", false)) {
                 requiresLocationForDiscovery = false;
             } else {
                 discoveryPermissions.add(FINE_LOCATION);
             }
         } else {
-            discoveryPermissions.add(Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q ? FINE_LOCATION : COARSE_LOCATION);
+            discoveryPermissions = List.of(Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q ? FINE_LOCATION : COARSE_LOCATION);
         }
     }
 
@@ -152,6 +155,10 @@ public class BluetoothSerialPlugin extends Plugin {
     private void connect(@NonNull PluginCall call, Connector connector) {
         if (rejectIfBluetoothDisabled(call)) return;
         if (hasCompatPermission(CONNECT)) {
+            if (connectCall != null) {
+                connectCall.reject("Connection interrupted");
+                connectCall = null;
+            }
             connectToDevice(call, connector);
         } else {
             requestConnectPermission(call);
@@ -337,13 +344,13 @@ public class BluetoothSerialPlugin extends Plugin {
             discoveryReceiver = null;
         }
     }
-
-    @SuppressLint("MissingPermission")
+    
     private void startDiscovery(PluginCall call) {
         cancelDiscovery();
         discoveryCall = call;
         discoveryReceiver = new BroadcastReceiver() {
 
+            private final Set<String> foundAddresses = new HashSet<>();
             private final JSONArray unpairedDevices = new JSONArray();
             private final JSObject result = new JSObject().put("devices", unpairedDevices);
 
@@ -351,9 +358,14 @@ public class BluetoothSerialPlugin extends Plugin {
                 String action = intent.getAction();
                 if (BluetoothDevice.ACTION_FOUND.equals(action)) {
                     BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
-                    unpairedDevices.put(deviceToJSON(device));
-                    result.put("devices", unpairedDevices);
-                    notifyListeners("discoverUnpaired", result);
+                    String address = device.getAddress();
+                    // for some reason, ACTION_FOUND sometimes finds duplicates
+                    if (!foundAddresses.contains(address)) {
+                        foundAddresses.add(address);
+                        unpairedDevices.put(deviceToJSON(device));
+                        result.put("devices", unpairedDevices);
+                        notifyListeners("discoverUnpaired", result);
+                    }
                 } else if (BluetoothAdapter.ACTION_DISCOVERY_FINISHED.equals(action)) {
                     discoveryCall.resolve(result);
                     getActivity().unregisterReceiver(this);
@@ -460,11 +472,7 @@ public class BluetoothSerialPlugin extends Plugin {
             List<String> requestedPermissions = call.getArray("permissions").toList();
             JSObject permissions = new JSObject();
             for (String alias: requestedPermissions) {
-                if (alias.contains("Location")) {
-                    permissions.put(alias, getPermissionState(alias));
-                } else {
-                    permissions.put(alias, PermissionState.GRANTED);
-                }
+                permissions.put(alias, alias.contains("Location") ? getPermissionState(alias) : PermissionState.GRANTED);
             }
             call.resolve(permissions);
         } catch(JSONException exception) {
