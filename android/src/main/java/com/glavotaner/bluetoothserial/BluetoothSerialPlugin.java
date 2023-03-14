@@ -109,8 +109,14 @@ public class BluetoothSerialPlugin extends Plugin {
             buffer.append(message.getData().getString("data"));
             return false;
         });
-        BluetoothManager bluetoothManager = getContext().getSystemService(BluetoothManager.class);
-        implementation = new BluetoothSerial(bluetoothManager.getAdapter(), connectionHandler, writeHandler, readHandler);
+        BluetoothAdapter bluetoothAdapter;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            BluetoothManager bluetoothManager = getContext().getSystemService(BluetoothManager.class);
+            bluetoothAdapter = bluetoothManager.getAdapter();
+        } else {
+            bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
+        }
+        implementation = new BluetoothSerial(bluetoothAdapter, connectionHandler, writeHandler, readHandler);
     }
 
     private void setDiscoveryPermissions() {
