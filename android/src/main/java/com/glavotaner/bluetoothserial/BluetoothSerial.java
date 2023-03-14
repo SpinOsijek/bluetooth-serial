@@ -210,7 +210,12 @@ public class BluetoothSerial {
                 Log.i(TAG, "Connected");
             } catch (IOException e) {
                 Log.e(TAG, e.toString());
-                handleConnectionError(e.getMessage());
+                String message = e.getMessage();
+                if (message != null) {
+                    handleConnectionError(message.equals("read failed, socket might closed or timeout, read ret: -1") ? "Unable to connect" : message);
+                } else {
+                    handleConnectionError("Unable to connect");
+                }
                 return;
             }
             // Reset the ConnectThread because we're done
